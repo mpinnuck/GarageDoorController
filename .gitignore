@@ -5,3 +5,6 @@
 *.kicad_prl
 *.lck
 fp-info-cache
+
+# macOS metadata
+.DS_Store
