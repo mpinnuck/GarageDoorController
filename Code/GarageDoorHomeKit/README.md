@@ -1,6 +1,6 @@
 # GarageDoorHomeKit
 
-Apple HomeKit contact sensor firmware for the garage door sensor, using
+Apple HomeKit contact controller firmware for the garage door controller, using
 [HomeSpan](https://github.com/HomeSpan/HomeSpan). Replaces `../GarageDoorMatter`
 (kept unchanged). Seeed XIAO ESP32C3, door reed on D1 (GPIO3), reed closed = door shut.
 
@@ -10,7 +10,7 @@ Apple HomeKit contact sensor firmware for the garage door sensor, using
   with its own local DNS suffix, such as `.lan`)
 - **Firmware updates over Wi-Fi** once installed
 
-HomeKit only: Google Home can no longer see the sensor.
+HomeKit only: Google Home can no longer see the controller.
 
 ## Setup
 1. Copy `include/secrets.example.h` to `include/secrets.h` and fill in the Wi-Fi
@@ -51,7 +51,7 @@ boot-count reset.
 
 Source files:
 - `main.cpp`          HomeSpan setup, door input, BOOT reset
-- `HomeKitDoorSensor` HomeKit Contact Sensor service
+- `HomeKitDoorController` HomeKit Contact Controller service
 - `DebouncedInput`    reed switch with 500 ms debounce
 - `EventLog`          ring buffer of log lines, also mirrored to Serial
 - `StatusWebServer`   port 80: `/`, `/api/status`, `/api/log?since=N`, `POST /api/reset-boot-count`

@@ -9,7 +9,7 @@
 static const char kStatusPage[] PROGMEM = R"HTML(<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Garage Door Sensor</title>
+<title>Garage Door Controller</title>
 <style>
 :root{--bg:#f4f4f2;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#ddddd8;
 --ok:#1f7a4d;--okbg:#e3f3ea;--warn:#9a5b00;--warnbg:#fcefd9;--bad:#a32d2d;--badbg:#fbe5e5}
@@ -39,7 +39,7 @@ padding:8px 10px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre-w
 #conn{font-size:13px;padding:2px 8px;border-radius:6px}
 .on{color:var(--ok);background:var(--okbg)}.off{color:var(--bad);background:var(--badbg)}
 </style></head><body><main>
-<div class="bar"><h1 style="flex:1;margin:0">Garage Door Sensor</h1><span id="conn" class="off">connecting</span></div>
+<div class="bar"><h1 style="flex:1;margin:0">Garage Door Controller</h1><span id="conn" class="off">connecting</span></div>
 <div class="door"><span id="door" class="badge unk">-</span>
 <div><div id="since"></div><div class="sub" id="changes"></div></div></div>
 <div class="grid" id="grid"></div>

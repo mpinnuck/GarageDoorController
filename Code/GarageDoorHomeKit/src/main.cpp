@@ -1,5 +1,5 @@
 // main.cpp  (GarageDoorHomeKit)
-// Garage door open/closed sensor for Apple Home, using HomeSpan (native HomeKit).
+// Garage door open/closed controller for Apple Home, using HomeSpan (native HomeKit).
 // Board: Seeed XIAO ESP32C3, Arduino ESP32 core 3.x.
 //
 // Hardware (schematic rev 10):
@@ -24,7 +24,7 @@
 #include "DebouncedInput.h"
 #include "DeviceStatus.h"
 #include "EventLog.h"
-#include "HomeKitDoorSensor.h"
+#include "HomeKitDoorController.h"
 #include "NetworkStatus.h"
 #include "StatusWebServer.h"
 #include "secrets.h"
@@ -44,7 +44,7 @@ const uint16_t HOMEKIT_PORT = 1201;      // HomeKit traffic; port 80 is the web 
 const char *const TIME_ZONE = "AEST-10AEDT,M10.1.0,M4.1.0/3";
 
 DebouncedInput door(DOOR_PIN, true, DEBOUNCE_MS);   // active (LOW) = closed
-HomeKitDoorSensor *doorService = nullptr;
+HomeKitDoorController *doorService = nullptr;
 
 BootInfo bootInfo;
 ClockSync clockSync;
@@ -79,9 +79,9 @@ static void setupHomeKit() {
     new Service::AccessoryInformation();
       new Characteristic::Identify();
       new Characteristic::Manufacturer("Mark Pinnuck");
-      new Characteristic::Model("Garage Door Sensor");
+      new Characteristic::Model("Garage Door Controller");
       new Characteristic::FirmwareRevision(FIRMWARE_VERSION);
-    doorService = new HomeKitDoorSensor(door.active());
+    doorService = new HomeKitDoorController(door.active());
 }
 
 // Hold BOOT for RESET_HOLD_MS: delete the HomeKit pairing and restart,

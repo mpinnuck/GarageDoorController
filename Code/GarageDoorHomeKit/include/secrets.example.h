@@ -8,7 +8,7 @@
 #define WIFI_SSID      "MicroConcepts-2G"
 #define WIFI_PASSWORD  "your-wifi-password"
 
-// 8-digit code you type into the Home app when adding the sensor.
+// 8-digit code you type into the Home app when adding the controller.
 // Avoid simple ones (12345678, 11111111): HomeKit rejects them.
 #define HOMEKIT_SETUP_CODE "46637726"
 

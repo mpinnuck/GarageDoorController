@@ -1,4 +1,4 @@
-// HomeKitDoorSensor.h
+// HomeKitDoorController.h
 // HomeKit Contact Sensor service for the garage door.
 // Apple Home shows it as Open / Closed, and Siri answers
 // "Is the garage door open?". Call setClosed() whenever the door changes.
@@ -7,9 +7,9 @@
 
 #include <HomeSpan.h>
 
-class HomeKitDoorSensor : public Service::ContactSensor {
+class HomeKitDoorController : public Service::ContactSensor {
 public:
-  explicit HomeKitDoorSensor(bool closed);
+  explicit HomeKitDoorController(bool closed);
 
   void setClosed(bool closed);
 

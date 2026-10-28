@@ -1,0 +1,27 @@
+{
+  "folders": [
+    {
+      "path": "Code/GarageDoorHomeKit"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.pio": true,
+      "**/.DS_Store": true,
+      "**/GarageDoorHomeKit.zip": true
+    },
+    "files.watcherExclude": {
+      "**/.pio/**": true
+    },
+    "search.exclude": {
+      "**/.pio/**": true,
+      "**/GarageDoorHomeKit.zip": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "Jason2866.esp-decoder",
+      "pioarduino.pioarduino-ide"
+    ]
+  }
+}
