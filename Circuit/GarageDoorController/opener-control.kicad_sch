@@ -7,7 +7,7 @@
 	(title_block
 		(title "Garage Door Controller - Opener Control")
 		(rev "2")
-		(comment 1 "PhotoMOS trigger to PB, optocoupler motion sense from FLASH")
+		(comment 1 "PhotoMOS trigger to PB, optocoupler motion sense from LAMP")
 	)
 	(lib_symbols
 		(symbol "Connector_Generic:Conn_01x04"
@@ -3510,7 +3510,7 @@
 		)
 		(uuid "5d2e2777-4a03-4b19-8b09-1868caf66587")
 	)
-	(text "R8 sets ~4.8 mA from a 24 V FLASH output (0.11 W). D4 protects the LED against reverse voltage."
+	(text "R8 sets ~4.8 mA from a 24 V LAMP output (0.11 W). D4 protects the LED against reverse voltage."
 		(exclude_from_sim no)
 		(at 30.48 142.24 0)
 		(effects
@@ -3521,7 +3521,7 @@
 		)
 		(uuid "13d9390e-edc9-4e5d-a1ee-924d9cbe53b3")
 	)
-	(text "Check FLASH to GND with a meter while the door runs; if FLASH pulses, firmware treats pulses as moving."
+	(text "Check LAMP to GND with a meter while the door runs; if LAMP pulses, firmware treats pulses as moving."
 		(exclude_from_sim no)
 		(at 30.48 144.78 0)
 		(effects
@@ -3543,7 +3543,7 @@
 		)
 		(uuid "15ed398d-1b40-48b4-82a1-7c86f550f640")
 	)
-	(text "FLASH"
+	(text "LAMP"
 		(exclude_from_sim no)
 		(at 224.79 86.96 0)
 		(effects
@@ -3587,7 +3587,7 @@
 		)
 		(uuid "2d9e948d-7872-40a2-8580-167cc1e3cf8a")
 	)
-	(text "OPENER_MOVING = XIAO D3 (GPIO5): LOW while the opener FLASH output is active (door moving)."
+	(text "OPENER_MOVING = XIAO D3 (GPIO5): LOW while the opener LAMP output is active (door moving)."
 		(exclude_from_sim no)
 		(at 30.48 45.72 0)
 		(effects
@@ -3642,7 +3642,7 @@
 		)
 		(uuid "79454968-3c1a-472d-90ec-2d31a5b602cc")
 	)
-	(text "4-core cable from J4 (JST PH plug) to PB, GND, FLASH and +24."
+	(text "4-core cable from J4 (JST PH plug) to PB, GND, LAMP and +24."
 		(exclude_from_sim no)
 		(at 191.77 111.76 0)
 		(effects
@@ -4304,7 +4304,7 @@
 		)
 		(uuid "1e567199-edd4-41fc-bc3f-1117a6d69742")
 	)
-	(label "FLASH"
+	(label "LAMP"
 		(at 171.45 95.25 0)
 		(effects
 			(font
@@ -4324,7 +4324,7 @@
 		)
 		(uuid "4533d47a-bcd0-4dd2-91f8-2ad6d36a876f")
 	)
-	(label "FLASH"
+	(label "LAMP"
 		(at 208.28 86.36 180)
 		(effects
 			(font
@@ -4344,7 +4344,7 @@
 		)
 		(uuid "59576ec6-f050-401f-a6ea-07af8551ec50")
 	)
-	(label "FLASH"
+	(label "LAMP"
 		(at 127 119.38 0)
 		(effects
 			(font
