@@ -76,6 +76,7 @@ bool positionStartupSettled = false;
 bool flashObserved = false;
 uint32_t lastFlashAt = 0;
 static bool pressDoor();
+static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command command);
 static bool pressHomeKitDoor(bool assumeStartupClose);
 static const char *homeKitUnavailable();
 static bool saveControlEnabled(bool enabled);
@@ -85,7 +86,8 @@ DoorControlGate controlGate(saveControlEnabled);
 BootInfo bootInfo;
 ClockSync clockSync;
 DeviceStatus deviceStatus;
-StatusWebServer webServer(Log, clockSync, bootInfo, deviceStatus, pressDoor, setControlEnabled);
+StatusWebServer webServer(Log, clockSync, bootInfo, deviceStatus, pressDoor, commandDoor,
+                          setControlEnabled);
 
 static bool clearSavedPosition() {
   positionRestorePending = false;
@@ -226,6 +228,13 @@ static bool pressDoorInternal(bool assumeStartupClose) {
 }
 
 static bool pressDoor() { return pressDoorInternal(false); }
+
+static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command command) {
+  if (!DoorWebCommandPolicy::shouldPress(doorModel, command))
+    return DoorWebCommandPolicy::Result::Ignored;
+  return pressDoorInternal(false) ? DoorWebCommandPolicy::Result::Pressed
+                                  : DoorWebCommandPolicy::Result::Failed;
+}
 
 static bool pressHomeKitDoor(bool assumeStartupClose) {
   if (assumeStartupClose) Log.log("HomeKit close: assuming next press closes after startup");

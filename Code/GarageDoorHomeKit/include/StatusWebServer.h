@@ -5,6 +5,7 @@
 //   GET  /api/log?since=N      log entries newer than sequence N as JSON
 //   POST /api/reset-boot-count sets the stored boot count back to 0
 //   POST /api/door/press      presses the opener's wall-button input
+//   POST /api/door/open|close|stop conditionally presses the opener input
 //   POST /api/door/control    enables or disables opener control
 // Starts itself once the device has an IP address. Call loop() from loop().
 
@@ -16,12 +17,14 @@
 #include "BootInfo.h"
 #include "ClockSync.h"
 #include "DeviceStatus.h"
+#include "DoorWebCommandPolicy.h"
 #include "EventLog.h"
 
 class StatusWebServer {
 public:
   StatusWebServer(EventLog &log, const ClockSync &clock, BootInfo &boot,
                   const DeviceStatus &status, bool (*pressDoor)(),
+                  DoorWebCommandPolicy::Result (*commandDoor)(DoorWebCommandPolicy::Command),
                   bool (*setControlEnabled)(bool));
 
   void loop();
@@ -33,6 +36,7 @@ private:
   void handleLog();
   void handleResetBootCount();
   void handleDoorPress();
+  void handleDoorCommand(DoorWebCommandPolicy::Command command, const char *token);
   void handleControlEnabled();
   void handleNotFound();
 
@@ -46,5 +50,6 @@ private:
   BootInfo &_boot;
   const DeviceStatus &_status;
   bool (*_pressDoor)();
+  DoorWebCommandPolicy::Result (*_commandDoor)(DoorWebCommandPolicy::Command);
   bool (*_setControlEnabled)(bool);
 };

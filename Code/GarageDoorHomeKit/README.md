@@ -79,6 +79,13 @@ cycle, rather than commanding a guaranteed direction.
 The web button suggests **Stop** while moving, **Open** when the reed is closed,
 and **Close** otherwise. This label is only a guess: a partly open or stopped
 door may move in the opposite direction when pressed.
+The API also provides `POST /api/door/open`, `/api/door/close`, and
+`/api/door/stop`. Open presses only when the door is closed or stopped after
+closing; Close presses only when open or stopped after opening; Stop presses
+only while the model reports opening or closing. Other states are successful
+no-ops (`{"ok":true,"pressed":false}`). These requests use the matching
+`X-Garage-Control` header and request body (`open`, `close`, or `stop`), like
+the raw `/api/door/press` endpoint uses `press`.
 The web interface has no authentication; anyone who can reach the device on the
 network can operate the door. Restrict network access accordingly.
 The device hostname is logged at startup and displayed above the IP address.
@@ -225,7 +232,7 @@ Source files:
 - `HomeKitDoorController` HomeKit garage door, contact and motion services
 - `DebouncedInput`    reed switch with 500 ms debounce
 - `EventLog`          ring buffer of log lines, also mirrored to Serial
-- `StatusWebServer`   port 80: `/`, `/api/status`, `/api/log?since=N`, `POST /api/door/press`, `POST /api/reset-boot-count`
+- `StatusWebServer`   port 80: `/`, `/api/status`, `/api/log?since=N`, `POST /api/door/{press,open,close,stop}`, `POST /api/reset-boot-count`
 - `StatusPage.h`      the HTML/JS page
 - `ClockSync`         NTP time (Sydney time zone) for log timestamps
 - `NetworkStatus`     IP, SSID and signal from the Wi-Fi interface

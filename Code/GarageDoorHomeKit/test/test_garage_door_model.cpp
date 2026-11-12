@@ -1,4 +1,5 @@
 #include "GarageDoorModel.h"
+#include "DoorWebCommandPolicy.h"
 #include "HomeKitDoorPolicy.h"
 #include "DoorPositionRestore.h"
 
@@ -127,6 +128,51 @@ static void testOpenCompletionMargin() {
   commandedStop.update(false, false, 14600);
   assert(commandedStop.state() == State::Stopped);
   assert(commandedStop.directionConfirmed());
+}
+
+static void testDoorWebCommands() {
+  using Command = DoorWebCommandPolicy::Command;
+
+  GarageDoorModel closed(true);
+  closed.begin(true, 0);
+  assert(DoorWebCommandPolicy::shouldPress(closed, Command::Open));
+  assert(!DoorWebCommandPolicy::shouldPress(closed, Command::Close));
+  assert(!DoorWebCommandPolicy::shouldPress(closed, Command::Stop));
+
+  GarageDoorModel open(true);
+  open.begin(false, 0);
+  const GarageDoorModel::Position openPosition = {
+      1, static_cast<uint8_t>(State::Open), static_cast<uint8_t>(State::Opening), 1, 0};
+  assert(open.restorePosition(openPosition));
+  assert(!DoorWebCommandPolicy::shouldPress(open, Command::Open));
+  assert(DoorWebCommandPolicy::shouldPress(open, Command::Close));
+
+  GarageDoorModel stoppedAfterClosing(true);
+  stoppedAfterClosing.begin(false, 0);
+  const GarageDoorModel::Position closingPosition = {
+      1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Closing), 0, 1};
+  assert(stoppedAfterClosing.restorePosition(closingPosition));
+  assert(DoorWebCommandPolicy::shouldPress(stoppedAfterClosing, Command::Open));
+  assert(!DoorWebCommandPolicy::shouldPress(stoppedAfterClosing, Command::Close));
+
+  GarageDoorModel stoppedAfterOpening(true);
+  stoppedAfterOpening.begin(false, 0);
+  const GarageDoorModel::Position openingPosition = {
+      1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Opening), 1, 0};
+  assert(stoppedAfterOpening.restorePosition(openingPosition));
+  assert(!DoorWebCommandPolicy::shouldPress(stoppedAfterOpening, Command::Open));
+  assert(DoorWebCommandPolicy::shouldPress(stoppedAfterOpening, Command::Close));
+
+  GarageDoorModel moving(true);
+  moving.begin(true, 0);
+  assert(moving.press(100));
+  moving.update(false, true, 200);
+  assert(DoorWebCommandPolicy::shouldPress(moving, Command::Stop));
+
+  GarageDoorModel movingUnknown(true);
+  movingUnknown.begin(false, 0);
+  movingUnknown.update(false, true, 100);
+  assert(!DoorWebCommandPolicy::shouldPress(movingUnknown, Command::Stop));
 }
 
 static void testHomeKitRequests() {
@@ -368,6 +414,7 @@ int main() {
   testStartFailureAndExternalMovement();
   testStopReverseAndObstruction();
   testOpenCompletionMargin();
+  testDoorWebCommands();
   testTimeoutAndFallback();
   testReedPriorityAndFailedStart();
   testHomeKitRequests();

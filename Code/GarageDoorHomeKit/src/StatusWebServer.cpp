@@ -13,9 +13,11 @@
 
 StatusWebServer::StatusWebServer(EventLog &log, const ClockSync &clock, BootInfo &boot,
                                  const DeviceStatus &status, bool (*pressDoor)(),
+                                 DoorWebCommandPolicy::Result (*commandDoor)(
+                                     DoorWebCommandPolicy::Command),
                                  bool (*setControlEnabled)(bool))
     : _log(log), _clock(clock), _boot(boot), _status(status), _pressDoor(pressDoor),
-      _setControlEnabled(setControlEnabled) {}
+      _commandDoor(commandDoor), _setControlEnabled(setControlEnabled) {}
 
 void StatusWebServer::loop() {
   if (!_running) {
@@ -28,6 +30,15 @@ void StatusWebServer::loop() {
     _server.on("/api/log", HTTP_GET, [this]() { handleLog(); });
     _server.on("/api/reset-boot-count", HTTP_POST, [this]() { handleResetBootCount(); });
     _server.on("/api/door/press", HTTP_POST, [this]() { handleDoorPress(); });
+    _server.on("/api/door/open", HTTP_POST, [this]() {
+      handleDoorCommand(DoorWebCommandPolicy::Command::Open, "open");
+    });
+    _server.on("/api/door/close", HTTP_POST, [this]() {
+      handleDoorCommand(DoorWebCommandPolicy::Command::Close, "close");
+    });
+    _server.on("/api/door/stop", HTTP_POST, [this]() {
+      handleDoorCommand(DoorWebCommandPolicy::Command::Stop, "stop");
+    });
     _server.on("/api/door/control", HTTP_POST, [this]() { handleControlEnabled(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
@@ -148,6 +159,25 @@ void StatusWebServer::handleDoorPress() {
     _server.send(409, "text/plain", "Opener is busy");
   } else {
     _server.send(200, "application/json", "{\"ok\":true}");
+  }
+}
+
+void StatusWebServer::handleDoorCommand(DoorWebCommandPolicy::Command command,
+                                        const char *token) {
+  _server.sendHeader("Cache-Control", "no-store");
+  if (_server.header("X-Garage-Control") != token || _server.arg("plain") != token) {
+    _server.send(400, "text/plain", "Invalid request");
+  } else if (!_status.controlEnabled) {
+    _server.send(403, "text/plain", "Door control is disabled");
+  } else {
+    const DoorWebCommandPolicy::Result result = _commandDoor(command);
+    if (result == DoorWebCommandPolicy::Result::Ignored) {
+      _server.send(200, "application/json", "{\"ok\":true,\"pressed\":false}");
+    } else if (result == DoorWebCommandPolicy::Result::Failed) {
+      _server.send(409, "text/plain", "Opener is busy");
+    } else {
+      _server.send(200, "application/json", "{\"ok\":true,\"pressed\":true}");
+    }
   }
 }
 
