@@ -377,7 +377,116 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [],
+    "erc_exclusions": [
+      {
+        "marker": {
+          "error_type": "ERCET_WIRE_DANGLING",
+          "items": [
+            {
+              "value": "11ae6555-e86c-43b4-b133-4919c87016a5"
+            },
+            {
+              "value": "2d25c935-2bd5-456c-a5b5-639302b65811"
+            },
+            {
+              "value": "869ed67b-fe2b-4c88-ab8e-589c452a94fa"
+            },
+            {
+              "value": "b14ba11e-b701-42fd-ade5-125c72113aa9"
+            }
+          ],
+          "position": {
+            "x_nm": "30480000",
+            "y_nm": "99060000"
+          },
+          "sheet_specific_path": {
+            "path": [
+              {
+                "value": "cc837ab6-ef04-4e8c-bd59-76c392cfd72b"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "marker": {
+          "error_type": "ERCET_WIRE_DANGLING",
+          "items": [
+            {
+              "value": "1f74cfef-4f51-4a85-806e-549fe05962c5"
+            },
+            {
+              "value": "30f2f335-e153-48dc-9bba-9dcd79ce9f7a"
+            },
+            {
+              "value": "6931ed37-0d9a-4a91-8aa4-f9adaf04c55a"
+            },
+            {
+              "value": "7f476e3b-cdce-4d0c-94d8-1c8e038ebe59"
+            }
+          ],
+          "position": {
+            "x_nm": "30480000",
+            "y_nm": "86360000"
+          },
+          "sheet_specific_path": {
+            "path": [
+              {
+                "value": "cc837ab6-ef04-4e8c-bd59-76c392cfd72b"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "marker": {
+          "error_type": "ERCET_WIRE_DANGLING",
+          "items": [
+            {
+              "value": "f3bbae25-7b45-4855-a2dd-2c3809253abc"
+            }
+          ],
+          "position": {
+            "x_nm": "78740000",
+            "y_nm": "96520000"
+          },
+          "sheet_specific_path": {
+            "path": [
+              {
+                "value": "cc837ab6-ef04-4e8c-bd59-76c392cfd72b"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "marker": {
+          "error_type": "ERCET_WIRE_DANGLING",
+          "items": [
+            {
+              "value": "015e71c7-a3cb-4f3c-bf91-b0a8c7a28b6a"
+            },
+            {
+              "value": "1ce4ef05-bd40-4871-98f2-83f34b96fe01"
+            },
+            {
+              "value": "6229fca5-c9e1-4151-813f-32378f03585c"
+            }
+          ],
+          "position": {
+            "x_nm": "83820000",
+            "y_nm": "93980000"
+          },
+          "sheet_specific_path": {
+            "path": [
+              {
+                "value": "cc837ab6-ef04-4e8c-bd59-76c392cfd72b"
+              }
+            ]
+          }
+        }
+      }
+    ],
     "meta": {
       "version": 1
     },

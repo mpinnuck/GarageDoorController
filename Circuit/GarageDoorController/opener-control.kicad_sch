@@ -3499,6 +3499,19 @@
 	)
 	(polyline
 		(pts
+			(xy 172.72 116.84) (xy 251.46 116.84) (xy 251.46 146.05) (xy 172.72 146.05) (xy 172.72 116.84)
+		)
+		(stroke
+			(width 0)
+			(type dash)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "59abfd08-82be-4518-8cfe-d667d69396b3")
+	)
+	(polyline
+		(pts
 			(xy 190.5 73.66) (xy 251.46 73.66) (xy 251.46 104.14) (xy 190.5 104.14) (xy 190.5 73.66)
 		)
 		(stroke
@@ -3598,6 +3611,17 @@
 		)
 		(uuid "34c9a97c-e280-4b81-a754-bc4fc285b755")
 	)
+	(text "J5 panel socket (male pins), internal pigtail to J4.  P3 cable plug (female), cable to X1."
+		(exclude_from_sim no)
+		(at 173.99 140.97 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "388eb229-c655-47fa-9476-54ac5de545c5")
+	)
 	(text "Leave PE (photo beam) as it is."
 		(exclude_from_sim no)
 		(at 191.77 114.3 0)
@@ -3631,6 +3655,17 @@
 		)
 		(uuid "548be88b-03ac-4f68-9876-bb9fd15cc770")
 	)
+	(text "Turn the opener off before connecting or disconnecting the GX12."
+		(exclude_from_sim no)
+		(at 173.99 143.51 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "5ca29f70-f8cd-4c69-886d-3935b2d2f166")
+	)
 	(text "U3 output (60 V, 0.5 A, either polarity) closes PB to opener GND."
 		(exclude_from_sim no)
 		(at 30.48 86.36 0)
@@ -3642,7 +3677,7 @@
 		)
 		(uuid "79454968-3c1a-472d-90ec-2d31a5b602cc")
 	)
-	(text "4-core cable from J4 (JST PH plug) to PB, GND, LAMP and +24."
+	(text "4-core cable from P3 (GX12 plug) to PB, GND, LAMP and +24."
 		(exclude_from_sim no)
 		(at 191.77 111.76 0)
 		(effects
@@ -3652,6 +3687,17 @@
 			(justify left bottom)
 		)
 		(uuid "7b0655e4-da46-4ba3-a884-d39652951fc9")
+	)
+	(text "GX12 4-pin connector in the housing wall. Pins 1-4 match J4: 1 PB, 2 GND, 3 LAMP, 4 +24."
+		(exclude_from_sim no)
+		(at 173.99 119.38 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8e80f22a-be36-4d32-839a-14dade73a60c")
 	)
 	(text "U5: RECOM R-78E5.0-0.5, 7-28 V in, 5 V 0.5 A, LM7805 pinout, ~90% efficient. D8 drops 10 V so ~34 V no-load becomes ~24 V."
 		(exclude_from_sim no)
@@ -3816,6 +3862,16 @@
 	)
 	(wire
 		(pts
+			(xy 236.22 130.81) (xy 243.84 130.81)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "143ef4c3-0545-478c-8d79-e7ba39bf93cb")
+	)
+	(wire
+		(pts
 			(xy 168.91 97.79) (xy 171.45 97.79)
 		)
 		(stroke
@@ -3843,6 +3899,16 @@
 			(type default)
 		)
 		(uuid "1b638b9b-e4bf-4e22-8bfd-6e624dc368c1")
+	)
+	(wire
+		(pts
+			(xy 236.22 135.89) (xy 243.84 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "20925b44-b666-4f7b-bc48-5606a5fb01eb")
 	)
 	(wire
 		(pts
@@ -3986,6 +4052,16 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 128.27) (xy 185.42 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "740f7c78-df31-4bb1-b864-e4f2e6b1989f")
+	)
+	(wire
+		(pts
 			(xy 111.76 172.72) (xy 111.76 180.34)
 		)
 		(stroke
@@ -4033,6 +4109,16 @@
 			(type default)
 		)
 		(uuid "7f429b59-b488-4f25-bad7-5adfbb78456f")
+	)
+	(wire
+		(pts
+			(xy 236.22 128.27) (xy 243.84 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "819fff6d-e1ea-408d-94a0-18aeeb6b9431")
 	)
 	(wire
 		(pts
@@ -4166,6 +4252,16 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 130.81) (xy 189.23 130.81)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ae9b96e4-ba8a-4941-a6db-44941b0caf44")
+	)
+	(wire
+		(pts
 			(xy 162.56 91.44) (xy 167.64 91.44)
 		)
 		(stroke
@@ -4183,6 +4279,16 @@
 			(type default)
 		)
 		(uuid "c3c504dc-3bf9-4682-9ba9-effc0a730094")
+	)
+	(wire
+		(pts
+			(xy 236.22 133.35) (xy 243.84 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c5bfae11-5f16-4ad7-82cf-775581ff87de")
 	)
 	(wire
 		(pts
@@ -4226,6 +4332,16 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 133.35) (xy 185.42 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e6ca41cb-5093-4d07-9999-37956cc292da")
+	)
+	(wire
+		(pts
 			(xy 168.91 95.25) (xy 171.45 95.25)
 		)
 		(stroke
@@ -4233,6 +4349,16 @@
 			(type default)
 		)
 		(uuid "ea2ed6e1-7d5a-4b8f-a852-94840b2dc555")
+	)
+	(wire
+		(pts
+			(xy 190.5 135.89) (xy 185.42 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eab0ea2a-8eef-43b7-ac4b-8c451e78b88b")
 	)
 	(wire
 		(pts
@@ -4345,6 +4471,16 @@
 		(uuid "59576ec6-f050-401f-a6ea-07af8551ec50")
 	)
 	(label "LAMP"
+		(at 185.42 133.35 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7966576b-cef4-439b-877c-5f476dbba5bd")
+	)
+	(label "LAMP"
 		(at 127 119.38 0)
 		(effects
 			(font
@@ -4364,6 +4500,26 @@
 		)
 		(uuid "912c267c-49a6-4322-bd0a-f84d93dc1129")
 	)
+	(label "PB"
+		(at 243.84 128.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c7809626-1b4d-413f-ba67-f86c5f3c025d")
+	)
+	(label "PB"
+		(at 185.42 128.27 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "da3a96bf-0ef3-4afe-abc1-f88bc2725f8f")
+	)
 	(label "OPENER_24V"
 		(at 171.45 97.79 0)
 		(effects
@@ -4373,6 +4529,36 @@
 			(justify left bottom)
 		)
 		(uuid "dd667506-9d40-4a3d-a258-e370c1a93b3a")
+	)
+	(label "OPENER_24V"
+		(at 185.42 135.89 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e4d3cc92-90c4-4a7a-9c7e-b7fd272bfdff")
+	)
+	(label "LAMP"
+		(at 243.84 133.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ea9de6bd-f497-4393-a8ce-ddc13f426b0b")
+	)
+	(label "OPENER_24V"
+		(at 243.84 135.89 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f7904c03-06c2-4900-b436-d41a6818221b")
 	)
 	(global_label "OPENER_MOVING"
 		(shape output)
@@ -5316,6 +5502,85 @@
 		)
 	)
 	(symbol
+		(lib_name "GND_3")
+		(lib_id "power:GND")
+		(at 243.84 130.81 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "869de5ea-8c15-467c-9b81-ff321a680647")
+		(property "Reference" "#PWR031"
+			(at 243.84 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 247.904 130.81 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 243.84 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 243.84 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 243.84 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5e5e95db-084e-4301-bc03-156ae308be87")
+		)
+		(instances
+			(project "GarageDoorController"
+				(path "/cc837ab6-ef04-4e8c-bd59-76c392cfd72b/2c6627e3-5976-4f46-a2a3-328194563a3c"
+					(reference "#PWR031")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 111.76 180.34 0)
 		(unit 1)
@@ -5480,7 +5745,7 @@
 		(dnp no)
 		(uuid "8c3fe588-8c26-4a08-9d84-a67e73e68b36")
 		(property "Reference" "D8"
-			(at 73.66 156.21 0)
+			(at 73.406 157.734 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5490,7 +5755,7 @@
 			)
 		)
 		(property "Value" "1N4740A 10V 1W"
-			(at 73.66 158.75 0)
+			(at 75.946 161.29 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5715,7 +5980,7 @@
 		(dnp no)
 		(uuid "9ee753be-f918-4d73-809f-60f61f87fd26")
 		(property "Reference" "D6"
-			(at 78.74 168.91 90)
+			(at 77.47 172.212 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5726,7 +5991,7 @@
 			)
 		)
 		(property "Value" "P6KE30CA"
-			(at 71.12 171.45 90)
+			(at 78.232 175.768 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6108,6 +6373,85 @@
 		)
 	)
 	(symbol
+		(lib_name "GND_3")
+		(lib_id "power:GND")
+		(at 189.23 130.81 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b266eb21-e5f0-4f1c-9da0-931ada6e8f7b")
+		(property "Reference" "#PWR030"
+			(at 189.23 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 181.102 130.556 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 189.23 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 189.23 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 189.23 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "a73b60ef-5d71-4a9d-93ca-464b8d2d349f")
+		)
+		(instances
+			(project "GarageDoorController"
+				(path "/cc837ab6-ef04-4e8c-bd59-76c392cfd72b/2c6627e3-5976-4f46-a2a3-328194563a3c"
+					(reference "#PWR030")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 68.58 60.96 90)
 		(unit 1)
@@ -6356,6 +6700,175 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x04")
+		(at 231.14 130.81 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board no)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "cdf12a4e-1871-499e-8ae9-14e75a67637f")
+		(property "Reference" "P3"
+			(at 231.14 123.19 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GX12 4-pin plug, female"
+			(at 231.14 124.968 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 231.14 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 231.14 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 231.14 130.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "22692c18-21fa-4e3d-88f4-0736c672e1f7")
+		)
+		(pin "2"
+			(uuid "de900c12-6b6c-443b-8a12-a1b5cada2787")
+		)
+		(pin "3"
+			(uuid "ddf536cc-810f-4fac-a05a-ea0e045066fd")
+		)
+		(pin "4"
+			(uuid "c76f49a5-a1a3-410e-971a-c385903db05b")
+		)
+		(instances
+			(project "GarageDoorController"
+				(path "/cc837ab6-ef04-4e8c-bd59-76c392cfd72b/2c6627e3-5976-4f46-a2a3-328194563a3c"
+					(reference "P3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector_Generic:Conn_01x04")
+		(at 195.58 130.81 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board no)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "d4ec30f5-46b4-4571-9783-d110bff1f370")
+		(property "Reference" "J5"
+			(at 195.326 122.682 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GX12 4-pin panel, male"
+			(at 195.834 124.714 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 195.58 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 195.58 130.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 195.58 130.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "51404856-0439-49c3-9d06-a6c62231dfa9")
+		)
+		(pin "2"
+			(uuid "6d1848cc-ecb0-4343-bb63-8a8b1191b31f")
+		)
+		(pin "3"
+			(uuid "d2c2e38e-2232-4d7c-b807-2ae06de47630")
+		)
+		(pin "4"
+			(uuid "d12bf7e9-2c7b-4dee-9fcf-4ef902effea3")
+		)
+		(instances
+			(project "GarageDoorController"
+				(path "/cc837ab6-ef04-4e8c-bd59-76c392cfd72b/2c6627e3-5976-4f46-a2a3-328194563a3c"
+					(reference "J5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector_Generic:Conn_01x04")
 		(at 157.48 91.44 0)
 		(mirror y)
 		(unit 1)
@@ -6386,7 +6899,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_JST:JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical"
+		(property "Footprint" "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical"
 			(at 157.48 91.44 0)
 			(hide yes)
 			(show_name no)

@@ -1,10 +1,12 @@
 # KiCad backups and generated local files
+*backup*
 *-backups/
 .history/
 *.bak
 *.kicad_prl
 *.lck
 fp-info-cache
+*.FCBak
 
 # macOS metadata
 .DS_Store
