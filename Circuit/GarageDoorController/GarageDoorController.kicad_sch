@@ -2255,7 +2255,7 @@
 		)
 		(uuid "caed68e5-bbc2-4f68-bf31-71e9e96e8eab")
 	)
-	(text "wired to 3.5 mm plug P1, tip and sleeve."
+	(text "wired to 2.5 mm plug P1, tip and sleeve."
 		(exclude_from_sim no)
 		(at 13.97 119.38 0)
 		(effects

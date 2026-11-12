@@ -28,6 +28,8 @@
 #include "DebouncedInput.h"
 #include "DeviceStatus.h"
 #include "DoorControlGate.h"
+#include "DoorPositionRestore.h"
+#include "DoorPositionStore.h"
 #include "EventLog.h"
 #include "GarageDoorModel.h"
 #include "HomeKitDoorController.h"
@@ -60,12 +62,22 @@ const char *const TIME_ZONE = "AEST-10AEDT,M10.1.0,M4.1.0/3";
 DebouncedInput door(DOOR_PIN, true, DEBOUNCE_MS);   // active (LOW) = closed
 HomeKitDoorController *doorService = nullptr;
 HomeKitMotionSensor *motionService = nullptr;
+HomeKitGarageDoor *openerService = nullptr;
 GarageDoorModel doorModel(OPENER_FLASH_FITTED);
 MotionInput motionInput;
 bool triggerActive = false;
 uint32_t triggerStart = 0;
+uint32_t inputStart = 0;
 esp_timer_handle_t triggerTimer = nullptr;
+DoorPositionStore positionStore;
+bool positionStorageHealthy = true;
+bool positionRestorePending = false;
+bool positionStartupSettled = false;
+bool flashObserved = false;
+uint32_t lastFlashAt = 0;
 static bool pressDoor();
+static bool pressHomeKitDoor(bool assumeStartupClose);
+static const char *homeKitUnavailable();
 static bool saveControlEnabled(bool enabled);
 static bool setControlEnabled(bool enabled);
 DoorControlGate controlGate(saveControlEnabled);
@@ -74,6 +86,72 @@ BootInfo bootInfo;
 ClockSync clockSync;
 DeviceStatus deviceStatus;
 StatusWebServer webServer(Log, clockSync, bootInfo, deviceStatus, pressDoor, setControlEnabled);
+
+static bool clearSavedPosition() {
+  positionRestorePending = false;
+  if (!positionStorageHealthy) return false;
+  positionStorageHealthy = positionStore.clear();
+  if (!positionStorageHealthy) {
+    Log.log("Door position storage error: could not clear record; opener control disabled");
+    return false;
+  }
+  return true;
+}
+
+static void saveSettledPosition() {
+  if (!positionStorageHealthy || !positionStartupSettled || !OPENER_FLASH_FITTED) return;
+  GarageDoorModel::Position position;
+  if (!doorModel.position(position)) {
+    clearSavedPosition();
+    return;
+  }
+  positionStorageHealthy = positionStore.save(position);
+  if (!positionStorageHealthy) {
+    Log.log("Door position storage error: could not save record; opener control disabled");
+    return;
+  }
+}
+
+static DoorPositionRestore::Reset positionResetReason(esp_reset_reason_t reason) {
+  using Reset = DoorPositionRestore::Reset;
+  switch (reason) {
+    case ESP_RST_SW: return Reset::Software;
+    case ESP_RST_PANIC: return Reset::Panic;
+    case ESP_RST_INT_WDT: return Reset::InterruptWatchdog;
+    case ESP_RST_TASK_WDT: return Reset::TaskWatchdog;
+    case ESP_RST_WDT: return Reset::Watchdog;
+    case ESP_RST_USB: return Reset::Usb;
+    case ESP_RST_POWERON: return Reset::PowerOn;
+    case ESP_RST_BROWNOUT: return Reset::Brownout;
+    default: return Reset::Other;
+  }
+}
+
+static void loadSavedPosition() {
+  if (!positionStore.load()) {
+    positionStorageHealthy = false;
+    Log.log("Door position not restored: storage unavailable; opener control disabled");
+    return;
+  }
+  if (!OPENER_FLASH_FITTED) {
+    Log.log("Door position not restored: motion input not fitted");
+    clearSavedPosition();
+    return;
+  }
+  using Decision = DoorPositionRestore::Decision;
+  const Decision decision = DoorPositionRestore::decide(
+      positionResetReason(esp_reset_reason()), deviceStatus.doorClosed,
+      positionStore.present(), positionStore.record());
+  if (decision == Decision::Restore) {
+    positionRestorePending = true;
+    return;
+  }
+  const char *reason = decision == Decision::ReedClosed ? "reed closed" :
+                       decision == Decision::ResetNotEligible ? "reset reason" :
+                       decision == Decision::NoRecord ? "no saved record" : "invalid record";
+  Log.log("Door position not restored: %s", reason);
+  clearSavedPosition();
+}
 
 static bool saveControlEnabled(bool enabled) {
   Preferences prefs;
@@ -114,7 +192,7 @@ static bool setControlEnabled(bool enabled) {
   return true;
 }
 
-static bool pressDoor() {
+static bool pressDoorInternal(bool assumeStartupClose) {
   const uint32_t now = millis();
   if (!controlGate.enabled()) {
     Log.log("Opener press rejected: door control disabled");
@@ -128,6 +206,10 @@ static bool pressDoor() {
     Log.log("Opener press rejected: busy");
     return false;
   }
+  if (!clearSavedPosition()) {
+    Log.log("Opener press rejected: door position storage unavailable");
+    return false;
+  }
   digitalWrite(OPENER_TRIGGER_PIN, HIGH);
   const esp_err_t timerResult = esp_timer_start_once(triggerTimer, OPENER_PULSE_MS * 1000ULL);
   if (timerResult != ESP_OK) {
@@ -135,12 +217,31 @@ static bool pressDoor() {
     Log.log("Opener press rejected: pulse timer error %d", (int)timerResult);
     return false;
   }
-  doorModel.press(now);
+  doorModel.press(now, assumeStartupClose);
   triggerActive = true;
   triggerStart = now;
   deviceStatus.controlPending = true;
   Log.log("Opener button pressed");
   return true;
+}
+
+static bool pressDoor() { return pressDoorInternal(false); }
+
+static bool pressHomeKitDoor(bool assumeStartupClose) {
+  if (assumeStartupClose) Log.log("HomeKit close: assuming next press closes after startup");
+  return pressDoorInternal(assumeStartupClose);
+}
+
+static const char *homeKitUnavailable() {
+  if (!controlGate.enabled()) return "door control disabled";
+  if (!positionStorageHealthy) return "door position storage fault";
+  if (!triggerTimer) return "pulse timer unavailable";
+  if (triggerActive) return "opener pulse in progress";
+  if (OPENER_FLASH_FITTED && millis() - inputStart < 1500)
+    return "waiting for startup motion input";
+  if (OPENER_FLASH_FITTED && !doorModel.motorRunning() && flashObserved &&
+      millis() - lastFlashAt < 1500) return "waiting for motion input to settle";
+  return nullptr;
 }
 
 static void releaseOpener(void *) {
@@ -169,7 +270,7 @@ static void setupHomeKit() {
       .setPairCallback(onPairingChanged)
       .setConnectionCallback(onConnected);
   homeSpan.enableOTA(OTA_PASSWORD);          // updates over Wi-Fi, password protected
-  homeSpan.begin(Category::Sensors, "Garage Door", DEVICE_NAME, "XIAO-ESP32C3");
+  homeSpan.begin(Category::GarageDoorOpeners, "Garage Door", DEVICE_NAME, "XIAO-ESP32C3");
 
   new SpanAccessory();
     new Service::AccessoryInformation();
@@ -177,9 +278,10 @@ static void setupHomeKit() {
       new Characteristic::Manufacturer("Mark Pinnuck");
       new Characteristic::Model("Garage Door Controller");
       new Characteristic::FirmwareRevision(FIRMWARE_VERSION);
+    openerService = new HomeKitGarageDoor(doorModel, homeKitUnavailable, pressHomeKitDoor);
+    openerService->setPrimary();
     doorService = new HomeKitDoorController(door.active());
     motionService = new HomeKitMotionSensor(false);
-    new HomeKitOpenerSwitch(pressDoor);
 }
 
 // Hold BOOT for RESET_HOLD_MS: delete the HomeKit pairing and restart,
@@ -227,8 +329,10 @@ void setup() {
   deviceStatus.doorClosed = door.active();
   doorModel.begin(deviceStatus.doorClosed, millis());
   Log.log("Initial door state: %s", deviceStatus.doorClosed ? "CLOSED" : "OPEN");
+  loadSavedPosition();
 
   setupHomeKit();
+  inputStart = millis();
 }
 
 void loop() {
@@ -236,8 +340,6 @@ void loop() {
     digitalWrite(OPENER_TRIGGER_PIN, LOW);
     triggerActive = false;
   }
-  homeSpan.poll();   // HomeKit, Wi-Fi and OTA
-
   // --- Log Wi-Fi loss ---
   static bool hadIp = false;
   const bool hasIp = NetworkStatus::hasIp();
@@ -252,9 +354,6 @@ void loop() {
     Log.log("Clock synchronised from network time");
   }
 
-  // --- Web UI ---
-  webServer.loop();
-
   // --- Door input (debounced) ---
   if (door.update()) {
     const bool closed = door.active();
@@ -266,8 +365,16 @@ void loop() {
     Log.log("Garage door %s", closed ? "CLOSED" : "OPEN");
   }
 
-  const bool motorRunning = OPENER_FLASH_FITTED &&
-      motionInput.update(digitalRead(OPENER_FLASH_PIN) == LOW, millis());
+  const bool flashLit = OPENER_FLASH_FITTED && digitalRead(OPENER_FLASH_PIN) == LOW;
+  if (flashLit) {
+    flashObserved = true;
+    lastFlashAt = millis();
+  }
+  if (flashLit || deviceStatus.doorClosed || digitalRead(DOOR_PIN) == LOW) {
+    if (positionRestorePending && flashLit) Log.log("Door position not restored: motion detected");
+    clearSavedPosition();
+  }
+  const bool motorRunning = OPENER_FLASH_FITTED && motionInput.update(flashLit, millis());
   const auto previousState = doorModel.state();
   const auto event = doorModel.update(deviceStatus.doorClosed, motorRunning, millis());
   if (event == GarageDoorModel::Event::StartFailed) Log.log("Opener did not start");
@@ -275,12 +382,31 @@ void loop() {
   if (event == GarageDoorModel::Event::SafetyTimeout) Log.log("Opener movement exceeded safety limit");
   if (previousState != doorModel.state())
     Log.log("Door movement state: %s", GarageDoorModel::name(doorModel.state()));
+  if (!positionStartupSettled && millis() - inputStart >= 1500) {
+    positionStartupSettled = true;
+    if (positionRestorePending) {
+      positionRestorePending = false;
+      if (doorModel.restorePosition(positionStore.record()))
+        Log.log("Door position restored after restart");
+      else {
+        Log.log("Door position not restored: door state changed");
+        clearSavedPosition();
+      }
+    }
+  }
+  if (positionStartupSettled && digitalRead(DOOR_PIN) != LOW &&
+      (!flashObserved || millis() - lastFlashAt >= 1500 || motorRunning))
+    saveSettledPosition();
   deviceStatus.doorState = GarageDoorModel::name(doorModel.state());
   deviceStatus.doorMoving = OPENER_FLASH_FITTED ? motorRunning : doorModel.moving();
   deviceStatus.obstruction = doorModel.obstruction();
-  deviceStatus.controlPending = !triggerTimer || triggerActive || !doorModel.canPress();
+  deviceStatus.controlPending = !positionStorageHealthy || !triggerTimer ||
+                                triggerActive || !doorModel.canPress();
   motionService->setMoving(deviceStatus.doorMoving);
+  openerService->sync(event);
 
+  webServer.loop();
+  homeSpan.poll();   // HomeKit, Wi-Fi and OTA
   checkResetButton();
   delay(10);
 }

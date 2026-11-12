@@ -7,7 +7,8 @@
 
 #include <HomeSpan.h>
 
-using DoorPressCallback = bool (*)();
+#include "GarageDoorModel.h"
+#include "HomeKitDoorPolicy.h"
 
 class HomeKitDoorController : public Service::ContactSensor {
 public:
@@ -28,14 +29,18 @@ private:
   Characteristic::MotionDetected *_motion;
 };
 
-class HomeKitOpenerSwitch : public Service::Switch {
+class HomeKitGarageDoor : public Service::GarageDoorOpener {
 public:
-  explicit HomeKitOpenerSwitch(DoorPressCallback press);
+  HomeKitGarageDoor(GarageDoorModel &model, const char *(*unavailable)(), bool (*press)(bool));
   boolean update() override;
-  void loop() override;
+  void sync(GarageDoorModel::Event event);
 
 private:
-  DoorPressCallback _press;
-  Characteristic::On *_on;
-  bool _reset = false;
+  GarageDoorModel &_model;
+  const char *(*_unavailable)();
+  bool (*_press)(bool);
+  Characteristic::CurrentDoorState *_current;
+  Characteristic::TargetDoorState *_target;
+  Characteristic::ObstructionDetected *_obstruction;
+  uint8_t _lastSettledTarget;
 };
