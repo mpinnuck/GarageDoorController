@@ -32,7 +32,6 @@ void GarageDoorModel::begin(bool closed, uint32_t now) {
   _state = closed ? State::Closed : State::Stopped;
   _movementStart = now;
   _startupDirectionUnknown = !closed;
-  _stoppedByCommand = false;
 }
 
 bool GarageDoorModel::validPosition(const Position &position) {
@@ -61,7 +60,6 @@ bool GarageDoorModel::restorePosition(const Position &position) {
   _directionConfirmed = position.directionConfirmed;
   _obstruction = position.obstruction;
   _startupDirectionUnknown = false;
-  _stoppedByCommand = _state == State::Stopped && _directionConfirmed && !_obstruction;
   return true;
 }
 
@@ -75,7 +73,6 @@ GarageDoorModel::State GarageDoorModel::nextDirection() const {
 
 void GarageDoorModel::start(State direction, uint32_t now) {
   _state = direction;
-  _stoppedByCommand = false;
   if (direction == State::Opening || direction == State::Closing) _lastDirection = direction;
   _movementStart = now;
   _obstruction = false;
@@ -93,14 +90,12 @@ bool GarageDoorModel::press(uint32_t now, bool assumeStartupClose) {
     else {
       _state = State::Stopped;
       _obstruction = false;
-      _stoppedByCommand = true;
     }
   } else {
     _previous = _state;
     _previousDirection = _lastDirection;
     _previousDirectionConfirmed = _directionConfirmed;
     _previousStartupDirectionUnknown = _startupDirectionUnknown;
-    _previousStoppedByCommand = _stoppedByCommand;
     _previousObstruction = _obstruction;
     _candidateDirectionKnown = _closed ||
         ((_state == State::Open || _state == State::Stopped) && _directionConfirmed);
@@ -115,27 +110,19 @@ bool GarageDoorModel::press(uint32_t now, bool assumeStartupClose) {
 }
 
 void GarageDoorModel::finish(uint32_t now, bool commandedStop) {
-  if (_closed) {
-    _state = State::Closed;
-    _stoppedByCommand = false;
-  } else if (commandedStop) {
-    _state = State::Stopped;
-    _stoppedByCommand = true;
-  }
+  if (_closed) _state = State::Closed;
+  else if (commandedStop) _state = State::Stopped;
   else if (_state == State::Opening &&
            now - _movementStart >= (_flashFitted ? kOpenCompletionMs : kOpenTravelMs) &&
-           (!_flashFitted || _directionConfirmed)) {
+           (!_flashFitted || _directionConfirmed))
     _state = State::Open;
-    _stoppedByCommand = false;
-  } else if (_state == State::Closing) {
+  else if (_state == State::Closing) {
     _state = State::Stopped;
     _obstruction = true;
     _directionConfirmed = false;
-    _stoppedByCommand = false;
   } else {
     _state = State::Stopped;
     _directionConfirmed = false;
-    _stoppedByCommand = false;
   }
 }
 
@@ -147,7 +134,6 @@ GarageDoorModel::Event GarageDoorModel::update(bool closed, bool motorRunning, u
   if (closed && !wasClosed) {
     _startupDirectionUnknown = false;
     _state = State::Closed;
-    _stoppedByCommand = false;
     _pending = Pending::None;
     _obstruction = false;
     _ignoreMotorUntilOff = motorRunning;
@@ -177,7 +163,6 @@ GarageDoorModel::Event GarageDoorModel::update(bool closed, bool motorRunning, u
       _lastDirection = _previousDirection;
       _directionConfirmed = _previousDirectionConfirmed;
       _startupDirectionUnknown = !_closed && _previousStartupDirectionUnknown;
-      _stoppedByCommand = _previousStoppedByCommand;
       _obstruction = _previousObstruction;
       _pending = Pending::None;
       event = Event::StartFailed;

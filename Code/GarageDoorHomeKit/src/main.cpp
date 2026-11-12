@@ -407,7 +407,7 @@ void loop() {
     saveSettledPosition();
   deviceStatus.doorState = GarageDoorModel::name(doorModel.state());
   deviceStatus.doorMoving = OPENER_FLASH_FITTED ? motorRunning : doorModel.moving();
-  deviceStatus.doorStoppedByCommand = doorModel.stoppedByCommand();
+  deviceStatus.flashMoving = motorRunning;
   deviceStatus.obstruction = doorModel.obstruction();
   deviceStatus.controlPending = !positionStorageHealthy || !triggerTimer ||
                                 triggerActive || !doorModel.canPress();

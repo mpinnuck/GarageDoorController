@@ -62,10 +62,10 @@ void StatusWebServer::handleStatus() {
   json += _status.doorClosed ? "true" : "false";
   json += ",\"doorState\":";
   appendJsonString(json, _status.doorState);
-  json += ",\"doorStoppedByCommand\":";
-  json += _status.doorStoppedByCommand ? "true" : "false";
   json += ",\"doorMoving\":";
   json += _status.doorMoving ? "true" : "false";
+  json += ",\"flashMoving\":";
+  json += _status.flashMoving ? "true" : "false";
   json += ",\"obstruction\":";
   json += _status.obstruction ? "true" : "false";
   json += ",\"controlPending\":";

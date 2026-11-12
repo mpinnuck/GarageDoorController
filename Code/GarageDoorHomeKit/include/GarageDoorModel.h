@@ -39,9 +39,6 @@ public:
   State state() const { return _closed ? State::Closed : _state; }
   State movementState() const { return _state; }
   bool moving() const;
-  bool stoppedByCommand() const {
-    return !_closed && _state == State::Stopped && _stoppedByCommand;
-  }
   bool obstruction() const { return _obstruction; }
   bool pending() const { return _pending != Pending::None; }
   bool motorRunning() const { return _motor; }
@@ -78,6 +75,4 @@ private:
   bool _candidateDirectionKnown = false;
   bool _previousDirectionConfirmed = false;
   bool _previousStartupDirectionUnknown = false;
-  bool _stoppedByCommand = false;
-  bool _previousStoppedByCommand = false;
 };

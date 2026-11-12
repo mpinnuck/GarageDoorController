@@ -56,7 +56,7 @@ padding:8px 10px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre-w
 <div class="bar"><h1 style="flex:1;margin:0">Garage Door Controller</h1><span id="conn" class="off">connecting</span></div>
 <div class="door"><div class="statuses">
 <div><div class="sub">Reed sensor</div><span id="door" class="badge unk">-</span></div>
-<div><div class="sub">Control status</div><span id="control-state" class="badge unk">Unknown</span></div>
+<div><div class="sub">GarageDoor Status</div><span id="control-state" class="badge unk">Unknown</span></div>
 <div><div class="sub">Motion status</div><span id="motion" class="badge unk" role="status">Unknown</span></div>
 </div>
 <div class="door-controls"><button id="press" disabled title="Presses the opener's wall-button input; the action is an estimate">Open / Stop / Close</button>
@@ -101,13 +101,8 @@ async function status(){
  const control=$('control-state');control.textContent=s.doorState;
  control.className='badge '+({Stopped:'status-red',Open:'status-blue',Closed:'status-green',
  Opening:'status-transit',Closing:'status-transit',Moving:'status-transit'}[s.doorState]||'unk');
- const motionState={
-  Opening:['Opening','status-transit'],Closing:['Closing','status-transit'],
-  Stopped:s.doorStoppedByCommand?['Stopped','status-red']:['Unknown','unk'],Open:['Not moving','status-green'],
-  Closed:['Not moving','status-green'],Moving:['Moving','status-transit']
- }[s.doorState]||['Unknown','unk'];
- const motion=$('motion');motion.textContent=motionState[0];
- motion.className='badge '+motionState[1];
+ const motion=$('motion');motion.textContent=s.flashMoving?'Moving':'Not moving';
+ motion.className='badge '+(s.flashMoving?'status-red':'status-green');
  $('press').textContent=s.doorMoving?'Stop':s.doorClosed?'Open':'Close';
  $('obstruction').textContent=s.obstruction?'Possible obstruction or reversal':'';
  controlPending=s.controlPending;controlEnabled=s.controlEnabled===true;updateControls();

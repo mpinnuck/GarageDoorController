@@ -10,7 +10,7 @@ struct DeviceStatus {
   bool doorClosed = false;
   const char *doorState = "Stopped";
   bool doorMoving = false;
-  bool doorStoppedByCommand = false;
+  bool flashMoving = false;
   bool obstruction = false;
   bool controlPending = false;
   bool controlEnabled = false;
