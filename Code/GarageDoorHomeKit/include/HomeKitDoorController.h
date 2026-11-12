@@ -7,6 +7,8 @@
 
 #include <HomeSpan.h>
 
+using DoorPressCallback = bool (*)();
+
 class HomeKitDoorController : public Service::ContactSensor {
 public:
   explicit HomeKitDoorController(bool closed);
@@ -15,4 +17,25 @@ public:
 
 private:
   Characteristic::ContactSensorState *_state;
+};
+
+class HomeKitMotionSensor : public Service::MotionSensor {
+public:
+  explicit HomeKitMotionSensor(bool moving);
+  void setMoving(bool moving);
+
+private:
+  Characteristic::MotionDetected *_motion;
+};
+
+class HomeKitOpenerSwitch : public Service::Switch {
+public:
+  explicit HomeKitOpenerSwitch(DoorPressCallback press);
+  boolean update() override;
+  void loop() override;
+
+private:
+  DoorPressCallback _press;
+  Characteristic::On *_on;
+  bool _reset = false;
 };

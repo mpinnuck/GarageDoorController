@@ -12,17 +12,23 @@
 #endif
 
 StatusWebServer::StatusWebServer(EventLog &log, const ClockSync &clock, BootInfo &boot,
-                                 const DeviceStatus &status)
-    : _log(log), _clock(clock), _boot(boot), _status(status) {}
+                                 const DeviceStatus &status, bool (*pressDoor)(),
+                                 bool (*setControlEnabled)(bool))
+    : _log(log), _clock(clock), _boot(boot), _status(status), _pressDoor(pressDoor),
+      _setControlEnabled(setControlEnabled) {}
 
 void StatusWebServer::loop() {
   if (!_running) {
     if (!NetworkStatus::hasIp()) return;
 
+    const char *headers[] = {"X-Garage-Control"};
+    _server.collectHeaders(headers, 1);
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/status", HTTP_GET, [this]() { handleStatus(); });
     _server.on("/api/log", HTTP_GET, [this]() { handleLog(); });
     _server.on("/api/reset-boot-count", HTTP_POST, [this]() { handleResetBootCount(); });
+    _server.on("/api/door/press", HTTP_POST, [this]() { handleDoorPress(); });
+    _server.on("/api/door/control", HTTP_POST, [this]() { handleControlEnabled(); });
     _server.onNotFound([this]() { handleNotFound(); });
     _server.begin();
     _running = true;
@@ -43,6 +49,16 @@ void StatusWebServer::handleStatus() {
 
   json += "{\"doorClosed\":";
   json += _status.doorClosed ? "true" : "false";
+  json += ",\"doorState\":";
+  appendJsonString(json, _status.doorState);
+  json += ",\"doorMoving\":";
+  json += _status.doorMoving ? "true" : "false";
+  json += ",\"obstruction\":";
+  json += _status.obstruction ? "true" : "false";
+  json += ",\"controlPending\":";
+  json += _status.controlPending ? "true" : "false";
+  json += ",\"controlEnabled\":";
+  json += _status.controlEnabled ? "true" : "false";
   json += ",\"doorChanges\":";
   json += _status.doorChanges;
   json += ",\"lastChangeAgoS\":";
@@ -57,6 +73,8 @@ void StatusWebServer::handleStatus() {
   appendJsonString(json, NetworkStatus::ssid().c_str());
   json += ",\"rssi\":";
   json += NetworkStatus::rssi();
+  json += ",\"deviceName\":";
+  appendJsonString(json, _status.deviceName);
   json += ",\"ip\":";
   appendJsonString(json, NetworkStatus::ipAddress().c_str());
   json += ",\"commissioned\":";
@@ -118,6 +136,33 @@ void StatusWebServer::handleResetBootCount() {
   _log.log("Boot count reset from web UI");
   _server.sendHeader("Cache-Control", "no-store");
   _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void StatusWebServer::handleDoorPress() {
+  _server.sendHeader("Cache-Control", "no-store");
+  if (_server.header("X-Garage-Control") != "press" || _server.arg("plain") != "press") {
+    _server.send(400, "text/plain", "Invalid request");
+  } else if (!_status.controlEnabled) {
+    _server.send(403, "text/plain", "Door control is disabled");
+  } else if (!_pressDoor()) {
+    _server.send(409, "text/plain", "Opener is busy");
+  } else {
+    _server.send(200, "application/json", "{\"ok\":true}");
+  }
+}
+
+void StatusWebServer::handleControlEnabled() {
+  _server.sendHeader("Cache-Control", "no-store");
+  const String value = _server.arg("plain");
+  if (_server.header("X-Garage-Control") != "control" ||
+      (value != "enable" && value != "disable")) {
+    _server.send(400, "text/plain", "Invalid request");
+  } else if (!_setControlEnabled(value == "enable")) {
+    _server.send(500, "text/plain",
+                 "Could not save setting; control is disabled until reboot, but the previous setting may return");
+  } else {
+    _server.send(200, "application/json", "{\"ok\":true}");
+  }
 }
 
 void StatusWebServer::handleNotFound() {
