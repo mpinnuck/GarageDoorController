@@ -10,6 +10,7 @@ struct DeviceStatus {
   bool doorClosed = false;
   const char *doorState = "Stopped";
   bool doorMoving = false;
+  bool doorStoppedByCommand = false;
   bool obstruction = false;
   bool controlPending = false;
   bool controlEnabled = false;
@@ -17,5 +18,4 @@ struct DeviceStatus {
   uint32_t doorChanges = 0;      // open/close transitions since boot
   uint32_t lastChangeMs = 0;     // millis() of the last transition
   bool hasChanged = false;       // false until the first transition
-  const char *homekitSetupCode = "";
 };

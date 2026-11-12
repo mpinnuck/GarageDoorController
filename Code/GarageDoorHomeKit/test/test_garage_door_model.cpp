@@ -87,6 +87,7 @@ static void testStopReverseAndObstruction() {
   assert(closing.state() == State::Stopped);
   assert(!closing.obstruction());
   assert(closing.directionConfirmed());
+  assert(closing.stoppedByCommand());
   assert(HomeKitDoorPolicy::action(closing, HomeKitDoorPolicy::Target::Open, true) ==
          HomeKitDoorPolicy::Action::Press);
   closing.update(false, true, 22000);
@@ -97,6 +98,7 @@ static void testStopReverseAndObstruction() {
   closing.update(false, false, 41000);
   assert(closing.state() == State::Stopped);
   assert(closing.obstruction());
+  assert(!closing.stoppedByCommand());
 }
 
 static void testOpenCompletionMargin() {
@@ -109,6 +111,7 @@ static void testOpenCompletionMargin() {
   shortMovement.update(false, false, 14599);
   assert(shortMovement.state() == State::Stopped);
   assert(!shortMovement.directionConfirmed());
+  assert(!shortMovement.stoppedByCommand());
   assert(Policy::action(shortMovement, Policy::Target::Closed, true) == Policy::Action::Reject);
 
   GarageDoorModel fullMovement(true);
@@ -128,6 +131,7 @@ static void testOpenCompletionMargin() {
   commandedStop.update(false, false, 14600);
   assert(commandedStop.state() == State::Stopped);
   assert(commandedStop.directionConfirmed());
+  assert(commandedStop.stoppedByCommand());
 }
 
 static void testDoorWebCommands() {
@@ -160,6 +164,7 @@ static void testDoorWebCommands() {
   const GarageDoorModel::Position openingPosition = {
       1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Opening), 1, 0};
   assert(stoppedAfterOpening.restorePosition(openingPosition));
+  assert(stoppedAfterOpening.stoppedByCommand());
   assert(!DoorWebCommandPolicy::shouldPress(stoppedAfterOpening, Command::Open));
   assert(DoorWebCommandPolicy::shouldPress(stoppedAfterOpening, Command::Close));
 
@@ -368,6 +373,7 @@ static void testTimeoutAndFallback() {
   assert(model.update(false, true, 30099) == Event::None);
   assert(model.update(false, true, 30100) == Event::SafetyTimeout);
   assert(model.state() == State::Stopped);
+  assert(!model.stoppedByCommand());
   assert(!model.press(30101));
   model.update(false, false, 31000);
   assert(model.press(31001));
@@ -392,8 +398,10 @@ static void testTimeoutAndFallback() {
   assert(external.state() == State::Opening);
   assert(external.press(1000));
   assert(external.state() == State::Stopped);
+  assert(external.stoppedByCommand());
   assert(external.press(2000));
   assert(external.state() == State::Closing);
+  assert(!external.stoppedByCommand());
 }
 
 static void testReedPriorityAndFailedStart() {

@@ -70,10 +70,13 @@ Do not use `garagedoor.local` if it belongs to another device.
 Hold BOOT for 5 s: forgets the HomeKit pairing and restarts, ready to add again.
 
 ## Door control and Web UI
-The web page includes an opener button and a moving indicator,
-as well as separate reed sensor (Open/Closed) and estimated control states,
+The web page includes an opener button and a direction-aware motion status:
+Opening or Closing while moving, Stopped after a commanded interruption,
+Not moving in settled Open/Closed states, Unknown for other stationary
+partial/uncertain states, and Moving when direction is unknown. It also shows
+the reed sensor (Open/Closed), estimated control state,
 Wi-Fi signal, uptime, boot count (with Reset), last reset
-reason, HomeKit pairing and setup code, and a live event log. The web button
+reason, HomeKit pairing state, and a live event log. The web button
 pulses the opener input: each press advances the opener's own open/stop/close
 cycle, rather than commanding a guaranteed direction.
 The web button suggests **Stop** while moving, **Open** when the reed is closed,

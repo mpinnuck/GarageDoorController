@@ -329,7 +329,6 @@ void setup() {
     Log.log("Could not create opener pulse timer: %d", (int)timerResult);
   }
   bootInfo.begin();
-  deviceStatus.homekitSetupCode = HOMEKIT_SETUP_CODE;
   Log.log("Boot #%lu, last reset: %s, firmware %s", (unsigned long)bootInfo.bootCount(),
           bootInfo.resetReason(), FIRMWARE_VERSION);
 
@@ -408,6 +407,7 @@ void loop() {
     saveSettledPosition();
   deviceStatus.doorState = GarageDoorModel::name(doorModel.state());
   deviceStatus.doorMoving = OPENER_FLASH_FITTED ? motorRunning : doorModel.moving();
+  deviceStatus.doorStoppedByCommand = doorModel.stoppedByCommand();
   deviceStatus.obstruction = doorModel.obstruction();
   deviceStatus.controlPending = !positionStorageHealthy || !triggerTimer ||
                                 triggerActive || !doorModel.canPress();

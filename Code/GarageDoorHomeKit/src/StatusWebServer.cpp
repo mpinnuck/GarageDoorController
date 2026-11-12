@@ -62,6 +62,8 @@ void StatusWebServer::handleStatus() {
   json += _status.doorClosed ? "true" : "false";
   json += ",\"doorState\":";
   appendJsonString(json, _status.doorState);
+  json += ",\"doorStoppedByCommand\":";
+  json += _status.doorStoppedByCommand ? "true" : "false";
   json += ",\"doorMoving\":";
   json += _status.doorMoving ? "true" : "false";
   json += ",\"obstruction\":";
@@ -94,8 +96,6 @@ void StatusWebServer::handleStatus() {
   json += _boot.bootCount();
   json += ",\"resetReason\":";
   appendJsonString(json, _boot.resetReason());
-  json += ",\"homekitSetupCode\":";
-  appendJsonString(json, _status.homekitSetupCode);
   json += ",\"freeHeap\":";
   json += ESP.getFreeHeap();
   json += ",\"minFreeHeap\":";

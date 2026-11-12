@@ -101,8 +101,13 @@ async function status(){
  const control=$('control-state');control.textContent=s.doorState;
  control.className='badge '+({Stopped:'status-red',Open:'status-blue',Closed:'status-green',
  Opening:'status-transit',Closing:'status-transit',Moving:'status-transit'}[s.doorState]||'unk');
- const motion=$('motion');motion.textContent=s.doorMoving?'Moving':'Not moving';
- motion.className='badge '+(s.doorMoving?'status-red':'status-green');
+ const motionState={
+  Opening:['Opening','status-transit'],Closing:['Closing','status-transit'],
+  Stopped:s.doorStoppedByCommand?['Stopped','status-red']:['Unknown','unk'],Open:['Not moving','status-green'],
+  Closed:['Not moving','status-green'],Moving:['Moving','status-transit']
+ }[s.doorState]||['Unknown','unk'];
+ const motion=$('motion');motion.textContent=motionState[0];
+ motion.className='badge '+motionState[1];
  $('press').textContent=s.doorMoving?'Stop':s.doorClosed?'Open':'Close';
  $('obstruction').textContent=s.obstruction?'Possible obstruction or reversal':'';
  controlPending=s.controlPending;controlEnabled=s.controlEnabled===true;updateControls();
@@ -114,7 +119,7 @@ async function status(){
  +cell('Wi-Fi',s.wifi?esc(s.ssid||'connected'):'disconnected')+cell('Signal',rssi)
  +cell('Device name',esc(s.deviceName||'-')+`<div class="sub">${esc(s.ip||'-')}</div>`)
  +cell('HomeKit',s.commissioned?'Paired':'Not paired')+cell('Boot count',s.bootCount)
- +cell('Last reset',esc(s.resetReason))+cell('HomeKit setup code',esc(s.homekitSetupCode))
+ +cell('Last reset',esc(s.resetReason))
  +cell('Free memory',`${(s.freeHeap/1024).toFixed(0)} KB (min ${(s.minFreeHeap/1024).toFixed(0)} KB)`)
  +cell('Firmware',esc(s.firmware),'wide');}
 async function log(){

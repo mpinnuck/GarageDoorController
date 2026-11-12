@@ -18,10 +18,11 @@ function element(id) {
 }
 
 let state = {
-  doorClosed: false, doorState: 'Stopped', doorMoving: false, obstruction: false,
+  doorClosed: false, doorState: 'Stopped', doorStoppedByCommand: false,
+  doorMoving: false, obstruction: false,
   controlEnabled: true, controlPending: false, lastChangeAgoS: -1, doorChanges: 0, uptimeMs: 1000,
   epoch: 0, wifi: true, ssid: 'test', rssi: -60, deviceName: 'garagecontroller', ip: '192.0.2.1',
-  commissioned: true, bootCount: 1, resetReason: 'test', homekitSetupCode: 'test',
+  commissioned: true, bootCount: 1, resetReason: 'test', homekitSetupCode: 'setup-code-must-stay-private',
   freeHeap: 1024, minFreeHeap: 1024, firmware: 'test',
 };
 let controlError = false;
@@ -48,10 +49,11 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.strictEqual(element('door').textContent, 'Open');
   assert.strictEqual(element('version').textContent, 'Version: test');
   assert.match(element('grid').innerHTML, /Device name<\/div><div class="v">garagecontroller<div class="sub">192\.0\.2\.1<\/div>/);
+  assert.doesNotMatch(element('grid').innerHTML, /HomeKit setup code|setup-code-must-stay-private/);
   assert.strictEqual(element('control-state').textContent, 'Stopped');
   assert.strictEqual(element('control-state').className, 'badge status-red');
-  assert.strictEqual(element('motion').textContent, 'Not moving');
-  assert.strictEqual(element('motion').className, 'badge status-green');
+  assert.strictEqual(element('motion').textContent, 'Unknown');
+  assert.strictEqual(element('motion').className, 'badge unk');
   assert.strictEqual(element('press').textContent, 'Close');
   assert.strictEqual(element('press').disabled, false);
   assert.strictEqual(element('control-toggle').textContent, 'Control enabled: Disable');
@@ -89,8 +91,8 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.strictEqual(element('door').textContent, 'Closed');
   assert.strictEqual(element('control-state').textContent, 'Closed');
   assert.strictEqual(element('control-state').className, 'badge status-green');
-  assert.strictEqual(element('motion').textContent, 'Moving');
-  assert.strictEqual(element('motion').className, 'badge status-red');
+  assert.strictEqual(element('motion').textContent, 'Not moving');
+  assert.strictEqual(element('motion').className, 'badge status-green');
   assert.strictEqual(element('press').textContent, 'Stop');
 
   state = { ...state, doorClosed: false, doorState: 'Closing', obstruction: true };
@@ -98,6 +100,8 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.strictEqual(element('door').textContent, 'Open');
   assert.strictEqual(element('control-state').textContent, 'Closing');
   assert.strictEqual(element('control-state').className, 'badge status-transit');
+  assert.strictEqual(element('motion').textContent, 'Closing');
+  assert.strictEqual(element('motion').className, 'badge status-transit');
   assert.strictEqual(element('obstruction').textContent, 'Possible obstruction or reversal');
   assert.strictEqual(element('press').textContent, 'Stop');
 
@@ -109,12 +113,31 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   await context.testStatus();
   assert.strictEqual(element('control-state').textContent, 'Open');
   assert.strictEqual(element('control-state').className, 'badge status-blue');
+  assert.strictEqual(element('motion').textContent, 'Not moving');
+  assert.strictEqual(element('motion').className, 'badge status-green');
+
+  state = { ...state, doorState: 'Opening' };
+  await context.testStatus();
+  assert.strictEqual(element('motion').textContent, 'Opening');
+  assert.strictEqual(element('motion').className, 'badge status-transit');
+
+  state = { ...state, doorState: 'Stopped', doorStoppedByCommand: true };
+  await context.testStatus();
+  assert.strictEqual(element('motion').textContent, 'Stopped');
+  assert.strictEqual(element('motion').className, 'badge status-red');
+
+  state = { ...state, doorStoppedByCommand: false };
+  await context.testStatus();
+  assert.strictEqual(element('motion').textContent, 'Unknown');
+  assert.strictEqual(element('motion').className, 'badge unk');
 
   for (const doorState of ['Opening', 'Moving']) {
     state = { ...state, doorState };
     await context.testStatus();
     assert.strictEqual(element('control-state').textContent, doorState);
     assert.strictEqual(element('control-state').className, 'badge status-transit');
+    assert.strictEqual(element('motion').textContent, doorState);
+    assert.strictEqual(element('motion').className, 'badge status-transit');
   }
   console.log('Status page tests passed');
 })().catch(error => {
