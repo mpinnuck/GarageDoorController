@@ -2,8 +2,6 @@
 
 #include "StatusWebServer.h"
 
-#include <HomeSpan.h>
-
 #include "NetworkStatus.h"
 #include "StatusPage.h"
 
@@ -90,8 +88,6 @@ void StatusWebServer::handleStatus() {
   appendJsonString(json, _status.deviceName);
   json += ",\"ip\":";
   appendJsonString(json, NetworkStatus::ipAddress().c_str());
-  json += ",\"commissioned\":";
-  json += (homeSpan.controllerListBegin() != homeSpan.controllerListEnd()) ? "true" : "false";
   json += ",\"bootCount\":";
   json += _boot.bootCount();
   json += ",\"resetReason\":";

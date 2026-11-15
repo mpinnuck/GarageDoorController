@@ -1,5 +1,4 @@
-// main.cpp  (GarageDoorHomeKit)
-// Garage door open/closed controller for Apple Home, using HomeSpan (native HomeKit).
+// Garage door open/closed controller with a web UI and HTTP API.
 // Board: Seeed XIAO ESP32C3, Arduino ESP32 core 3.x.
 //
 // Hardware (schematic rev 10):
@@ -8,17 +7,15 @@
 //   Reed closed (magnet present, door shut) = LOW.
 //   D2 (GPIO4): active-HIGH opener button output.
 //   D3 (GPIO5): active-LOW FLASH input from PC817.
-//   BOOT button (GPIO9): hold 5 s to forget the HomeKit pairing and restart.
 //
 // Setup: copy include/secrets.example.h to include/secrets.h and fill it in.
-// Add to Home: Home app > + > Add Accessory > More options > "Garage Door",
-// then enter HOMEKIT_SETUP_CODE.
 //
 // Web UI: http://garagecontroller.local/ or http://<device IP>/
 // Firmware updates over Wi-Fi: pio run -e ota -t upload
 
 #include <Arduino.h>
-#include <HomeSpan.h>
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>
 #include <Preferences.h>
 #include <WiFi.h>
 #include <esp_timer.h>
@@ -32,7 +29,6 @@
 #include "DoorPositionStore.h"
 #include "EventLog.h"
 #include "GarageDoorModel.h"
-#include "HomeKitDoorController.h"
 #include "NetworkStatus.h"
 #include "StatusWebServer.h"
 #include "secrets.h"
@@ -42,7 +38,6 @@
 #endif
 
 const uint8_t DOOR_PIN = 3;     // XIAO D1
-const uint8_t BUTTON_PIN = 9;   // XIAO BOOT button
 const uint8_t OPENER_TRIGGER_PIN = 4;
 const uint8_t OPENER_FLASH_PIN = 5;
 
@@ -51,8 +46,6 @@ const uint8_t OPENER_FLASH_PIN = 5;
 #endif
 
 const uint32_t DEBOUNCE_MS = 500;        // door must be stable this long
-const uint32_t RESET_HOLD_MS = 5000;     // BOOT held this long = forget pairing
-const uint16_t HOMEKIT_PORT = 1201;      // HomeKit traffic; port 80 is the web page
 const uint32_t OPENER_PULSE_MS = 500;
 const char *const DEVICE_NAME = "garagecontroller";
 
@@ -60,14 +53,11 @@ const char *const DEVICE_NAME = "garagecontroller";
 const char *const TIME_ZONE = "AEST-10AEDT,M10.1.0,M4.1.0/3";
 
 DebouncedInput door(DOOR_PIN, true, DEBOUNCE_MS);   // active (LOW) = closed
-HomeKitDoorController *doorService = nullptr;
-HomeKitMotionSensor *motionService = nullptr;
-HomeKitGarageDoor *openerService = nullptr;
 GarageDoorModel doorModel(OPENER_FLASH_FITTED);
 MotionInput motionInput;
 bool triggerActive = false;
 uint32_t triggerStart = 0;
-uint32_t inputStart = 0;
+uint32_t inputMonitoringStartedAt = 0;
 esp_timer_handle_t triggerTimer = nullptr;
 DoorPositionStore positionStore;
 bool positionStorageHealthy = true;
@@ -77,8 +67,6 @@ bool flashObserved = false;
 uint32_t lastFlashAt = 0;
 static bool pressDoor();
 static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command command);
-static bool pressHomeKitDoor(bool assumeStartupClose);
-static const char *homeKitUnavailable();
 static bool saveControlEnabled(bool enabled);
 static bool setControlEnabled(bool enabled);
 DoorControlGate controlGate(saveControlEnabled);
@@ -194,7 +182,7 @@ static bool setControlEnabled(bool enabled) {
   return true;
 }
 
-static bool pressDoorInternal(bool assumeStartupClose) {
+static bool pressDoorInternal() {
   const uint32_t now = millis();
   if (!controlGate.enabled()) {
     Log.log("Opener press rejected: door control disabled");
@@ -219,7 +207,7 @@ static bool pressDoorInternal(bool assumeStartupClose) {
     Log.log("Opener press rejected: pulse timer error %d", (int)timerResult);
     return false;
   }
-  doorModel.press(now, assumeStartupClose);
+  doorModel.press(now);
   triggerActive = true;
   triggerStart = now;
   deviceStatus.controlPending = true;
@@ -227,86 +215,25 @@ static bool pressDoorInternal(bool assumeStartupClose) {
   return true;
 }
 
-static bool pressDoor() { return pressDoorInternal(false); }
+static bool pressDoor() { return pressDoorInternal(); }
 
 static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command command) {
   if (!DoorWebCommandPolicy::shouldPress(doorModel, command))
     return DoorWebCommandPolicy::Result::Ignored;
-  return pressDoorInternal(false) ? DoorWebCommandPolicy::Result::Pressed
-                                  : DoorWebCommandPolicy::Result::Failed;
-}
-
-static bool pressHomeKitDoor(bool assumeStartupClose) {
-  if (assumeStartupClose) Log.log("HomeKit close: assuming next press closes after startup");
-  return pressDoorInternal(assumeStartupClose);
-}
-
-static const char *homeKitUnavailable() {
-  if (!controlGate.enabled()) return "door control disabled";
-  if (!positionStorageHealthy) return "door position storage fault";
-  if (!triggerTimer) return "pulse timer unavailable";
-  if (triggerActive) return "opener pulse in progress";
-  if (OPENER_FLASH_FITTED && millis() - inputStart < 1500)
-    return "waiting for startup motion input";
-  if (OPENER_FLASH_FITTED && !doorModel.motorRunning() && flashObserved &&
-      millis() - lastFlashAt < 1500) return "waiting for motion input to settle";
-  return nullptr;
+  return pressDoorInternal() ? DoorWebCommandPolicy::Result::Pressed
+                             : DoorWebCommandPolicy::Result::Failed;
 }
 
 static void releaseOpener(void *) {
   digitalWrite(OPENER_TRIGGER_PIN, LOW);
 }
 
-static void onPairingChanged(boolean paired) {
-  Log.log("HomeKit: %s", paired ? "paired with Apple Home" : "pairing removed");
-}
-
-static void onConnected(int count) {
-  Log.log("Wi-Fi connected to %s, %d dBm (connection #%d)", NetworkStatus::ssid().c_str(),
-          NetworkStatus::rssi(), count);
-}
-
-static void setupHomeKit() {
+static void setupNetwork() {
   WiFi.mode(WIFI_STA);
   if (!WiFi.setHostname(DEVICE_NAME)) Log.log("Could not set Wi-Fi hostname");
-
-  homeSpan.setLogLevel(0)
-      .setPortNum(HOMEKIT_PORT)
-      .setWifiCredentials(WIFI_SSID, WIFI_PASSWORD)
-      .setPairingCode(HOMEKIT_SETUP_CODE)
-      .setHostNameSuffix("")                 // mDNS name: garagecontroller.local
-      .setSketchVersion(FIRMWARE_VERSION)
-      .setPairCallback(onPairingChanged)
-      .setConnectionCallback(onConnected);
-  homeSpan.enableOTA(OTA_PASSWORD);          // updates over Wi-Fi, password protected
-  homeSpan.begin(Category::GarageDoorOpeners, "Garage Door", DEVICE_NAME, "XIAO-ESP32C3");
-
-  new SpanAccessory();
-    new Service::AccessoryInformation();
-      new Characteristic::Identify();
-      new Characteristic::Manufacturer("Mark Pinnuck");
-      new Characteristic::Model("Garage Door Controller");
-      new Characteristic::FirmwareRevision(FIRMWARE_VERSION);
-    openerService = new HomeKitGarageDoor(doorModel, homeKitUnavailable, pressHomeKitDoor);
-    openerService->setPrimary();
-    doorService = new HomeKitDoorController(door.active());
-    motionService = new HomeKitMotionSensor(false);
-}
-
-// Hold BOOT for RESET_HOLD_MS: delete the HomeKit pairing and restart,
-// ready to be added to the Home app again.
-static void checkResetButton() {
-  static uint32_t pressStart = 0;
-  if (digitalRead(BUTTON_PIN) == LOW) {
-    if (pressStart == 0) pressStart = millis();
-    if (millis() - pressStart > RESET_HOLD_MS) {
-      Log.log("BOOT held: forgetting HomeKit pairing and restarting");
-      delay(200);
-      homeSpan.processSerialCommand("H");   // erases pairing data and reboots
-    }
-  } else {
-    pressStart = 0;
-  }
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  ArduinoOTA.setHostname(DEVICE_NAME);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
 }
 
 void setup() {
@@ -332,15 +259,14 @@ void setup() {
   Log.log("Boot #%lu, last reset: %s, firmware %s", (unsigned long)bootInfo.bootCount(),
           bootInfo.resetReason(), FIRMWARE_VERSION);
 
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
   door.begin();
   deviceStatus.doorClosed = door.active();
   doorModel.begin(deviceStatus.doorClosed, millis());
   Log.log("Initial door state: %s", deviceStatus.doorClosed ? "CLOSED" : "OPEN");
   loadSavedPosition();
 
-  setupHomeKit();
-  inputStart = millis();
+  setupNetwork();
+  inputMonitoringStartedAt = millis();
 }
 
 void loop() {
@@ -351,8 +277,26 @@ void loop() {
   // --- Log Wi-Fi loss ---
   static bool hadIp = false;
   const bool hasIp = NetworkStatus::hasIp();
-  if (hadIp && !hasIp) Log.log("Wi-Fi connection lost");
+  static bool otaStarted = false;
+  static bool mdnsStarted = false;
+  if (hasIp && !hadIp) {
+    Log.log("Wi-Fi connected to %s, %d dBm", NetworkStatus::ssid().c_str(),
+            NetworkStatus::rssi());
+    mdnsStarted = MDNS.begin(DEVICE_NAME);
+    if (!mdnsStarted) Log.log("Could not start mDNS");
+    if (!otaStarted) {
+      ArduinoOTA.begin();
+      otaStarted = true;
+      Log.log("Password-protected OTA updates ready");
+    }
+  }
+  if (hadIp && !hasIp) {
+    Log.log("Wi-Fi connection lost");
+    if (mdnsStarted) MDNS.end();
+    mdnsStarted = false;
+  }
   hadIp = hasIp;
+  if (otaStarted) ArduinoOTA.handle();
 
   // --- Network time (for log timestamps), once we have an address ---
   if (!clockSync.started() && hasIp) clockSync.begin(TIME_ZONE);
@@ -365,7 +309,6 @@ void loop() {
   // --- Door input (debounced) ---
   if (door.update()) {
     const bool closed = door.active();
-    doorService->setClosed(closed);
     deviceStatus.doorClosed = closed;
     deviceStatus.doorChanges++;
     deviceStatus.lastChangeMs = millis();
@@ -390,7 +333,7 @@ void loop() {
   if (event == GarageDoorModel::Event::SafetyTimeout) Log.log("Opener movement exceeded safety limit");
   if (previousState != doorModel.state())
     Log.log("Door movement state: %s", GarageDoorModel::name(doorModel.state()));
-  if (!positionStartupSettled && millis() - inputStart >= 1500) {
+  if (!positionStartupSettled && millis() - inputMonitoringStartedAt >= 1500) {
     positionStartupSettled = true;
     if (positionRestorePending) {
       positionRestorePending = false;
@@ -411,11 +354,6 @@ void loop() {
   deviceStatus.obstruction = doorModel.obstruction();
   deviceStatus.controlPending = !positionStorageHealthy || !triggerTimer ||
                                 triggerActive || !doorModel.canPress();
-  motionService->setMoving(deviceStatus.doorMoving);
-  openerService->sync(event);
-
   webServer.loop();
-  homeSpan.poll();   // HomeKit, Wi-Fi and OTA
-  checkResetButton();
   delay(10);
 }

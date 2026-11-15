@@ -3556,7 +3556,7 @@
 		)
 		(uuid "15ed398d-1b40-48b4-82a1-7c86f550f640")
 	)
-	(text "LAMP"
+	(text "LAMP (yellow)"
 		(exclude_from_sim no)
 		(at 224.79 86.96 0)
 		(effects
@@ -3589,7 +3589,7 @@
 		)
 		(uuid "22bea856-2a05-4aee-9ce9-7c3d3266c096")
 	)
-	(text "GND"
+	(text "GND  (green)"
 		(exclude_from_sim no)
 		(at 224.79 92.04 0)
 		(effects
@@ -3633,7 +3633,7 @@
 		)
 		(uuid "3d9d2d4a-3d63-4e6e-8896-a0f17d259e76")
 	)
-	(text "+24"
+	(text "+24  (red)"
 		(exclude_from_sim no)
 		(at 224.79 89.5 0)
 		(effects
@@ -3754,7 +3754,7 @@
 		)
 		(uuid "c31b4d78-8894-42ae-89c3-cccbff4ab8e8")
 	)
-	(text "PB"
+	(text "PB   (black)"
 		(exclude_from_sim no)
 		(at 224.79 97.12 0)
 		(effects

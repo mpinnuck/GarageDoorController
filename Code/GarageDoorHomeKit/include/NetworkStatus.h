@@ -1,7 +1,5 @@
 // NetworkStatus.h
-// Read-only view of the Wi-Fi station interface that HomeSpan brought up.
-// Uses ESP-IDF directly, so it works whichever library manages Wi-Fi
-// (and doesn't disturb it).
+// Read-only view of the Wi-Fi station interface.
 
 #pragma once
 

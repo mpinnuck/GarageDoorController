@@ -22,7 +22,7 @@ let state = {
   obstruction: false,
   controlEnabled: true, controlPending: false, lastChangeAgoS: -1, doorChanges: 0, uptimeMs: 1000,
   epoch: 0, wifi: true, ssid: 'test', rssi: -60, deviceName: 'garagecontroller', ip: '192.0.2.1',
-  commissioned: true, bootCount: 1, resetReason: 'test', homekitSetupCode: 'setup-code-must-stay-private',
+  bootCount: 1, resetReason: 'test',
   freeHeap: 1024, minFreeHeap: 1024, firmware: 'test',
 };
 let controlError = false;
@@ -49,7 +49,7 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.strictEqual(element('door').textContent, 'Open');
   assert.strictEqual(element('version').textContent, 'Version: test');
   assert.match(element('grid').innerHTML, /Device name<\/div><div class="v">garagecontroller<div class="sub">192\.0\.2\.1<\/div>/);
-  assert.doesNotMatch(element('grid').innerHTML, /HomeKit setup code|setup-code-must-stay-private/);
+  assert.doesNotMatch(element('grid').innerHTML, /HomeKit/);
   assert.match(page, /GarageDoor Status/);
   assert.strictEqual(element('control-state').textContent, 'Stopped');
   assert.strictEqual(element('control-state').className, 'badge status-red');
