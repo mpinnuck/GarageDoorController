@@ -64,11 +64,9 @@ public:
   /**
    * @brief Records an opener-button press and updates the estimated door state.
    * @param[in] now Current time in milliseconds.
-   * @param[in] assumeStartupClose Treat an unknown startup position as a close
-   *                               command when true.
    * @return True if the press was accepted; otherwise, false.
    */
-  bool press(uint32_t now, bool assumeStartupClose = false);
+  bool press(uint32_t now);
 
   /**
    * @brief Updates the model using sensor readings and elapsed time.

@@ -82,7 +82,7 @@ bool GarageDoorModel::canPress() const {
   return _pending == Pending::None && !_ignoreMotorUntilOff && !(_closed && _motor);
 }
 
-bool GarageDoorModel::press(uint32_t now, bool assumeStartupClose) {
+bool GarageDoorModel::press(uint32_t now) {
   if (!canPress()) return false;
   _pressTime = now;
   if (isMoving(_state)) {
@@ -99,8 +99,7 @@ bool GarageDoorModel::press(uint32_t now, bool assumeStartupClose) {
     _previousObstruction = _obstruction;
     _candidateDirectionKnown = _closed ||
         ((_state == State::Open || _state == State::Stopped) && _directionConfirmed);
-    const State direction = assumeStartupClose && _startupDirectionUnknown
-                                ? State::Closing : nextDirection();
+    const State direction = nextDirection();
     _startupDirectionUnknown = false;
     _directionConfirmed = false;
     start(direction, now);
