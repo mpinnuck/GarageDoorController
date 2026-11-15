@@ -1,21 +1,21 @@
 {
   "folders": [
     {
-      "path": "Code/GarageDoorHomeKit"
+      "path": "Code/GarageDoorController"
     }
   ],
   "settings": {
     "files.exclude": {
       "**/.pio": true,
       "**/.DS_Store": true,
-      "**/GarageDoorHomeKit.zip": true
+      "**/GarageDoorController.zip": true
     },
     "files.watcherExclude": {
       "**/.pio/**": true
     },
     "search.exclude": {
       "**/.pio/**": true,
-      "**/GarageDoorHomeKit.zip": true
+      "**/GarageDoorController.zip": true
     }
   },
   "extensions": {

@@ -1,8 +1,7 @@
 # Garage Door Controller
 
-Firmware for a Seeed XIAO ESP32C3 garage-door controller. The controller is
-operated through its web page or HTTP endpoints; it does not use HomeKit or
-Matter.
+Firmware for a Seeed XIAO ESP32C3 garage-door controller, operated through its
+web page or HTTP endpoints.
 
 ## Setup
 

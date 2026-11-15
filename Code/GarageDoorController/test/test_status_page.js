@@ -55,7 +55,7 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.strictEqual(element('door').textContent, 'Open');
   assert.strictEqual(element('version').textContent, 'Version: test');
   assert.match(element('grid').innerHTML, /Device name<\/div><div class="v">garagecontroller<div class="sub">192\.0\.2\.1<\/div>/);
-  assert.doesNotMatch(element('grid').innerHTML, /HomeKit/);
+  assert.match(element('grid').innerHTML, /Boot count/);
   assert.match(page, /GarageDoor Status/);
   assert.strictEqual(element('control-state').textContent, 'Stopped');
   assert.strictEqual(element('control-state').className, 'badge status-red');

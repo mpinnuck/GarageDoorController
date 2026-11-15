@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/markpinnuck/Dev/GitHub/GarageDoorController/Code/GarageDoorHomeKit/src",
-      "program": "/Users/markpinnuck/Dev/GitHub/GarageDoorController/Code/GarageDoorHomeKit/src/build/Debug/outDebug"
+      "cwd": "/Users/markpinnuck/Dev/GitHub/GarageDoorController/Code/GarageDoorController/src",
+      "program": "/Users/markpinnuck/Dev/GitHub/GarageDoorController/Code/GarageDoorController/src/build/Debug/outDebug"
     }
   ]
 }
