@@ -127,12 +127,41 @@ static void testOpenCompletionMargin() {
 
 static void testDoorWebCommands() {
   using Command = DoorWebCommandPolicy::Command;
+  using Action = DoorWebCommandPolicy::Action;
 
   GarageDoorModel closed(true);
   closed.begin(true, 0);
   assert(DoorWebCommandPolicy::shouldPress(closed, Command::Open));
   assert(!DoorWebCommandPolicy::shouldPress(closed, Command::Close));
   assert(!DoorWebCommandPolicy::shouldPress(closed, Command::Stop));
+
+  GarageDoorModel powerOnOpen(true);
+  powerOnOpen.begin(false, 0);
+  assert(powerOnOpen.state() == State::Open);
+  assert(powerOnOpen.startupDirectionUnknown());
+  assert(!powerOnOpen.directionConfirmed());
+  auto result = DoorWebCommandPolicy::evaluate(powerOnOpen, Command::Open);
+  assert(result.action == Action::NoOp);
+  assert(std::strcmp(result.reason, "already open") == 0);
+  assert(DoorWebCommandPolicy::shouldPress(powerOnOpen, Command::Close));
+  assert(powerOnOpen.press(100));
+  assert(powerOnOpen.state() == State::Closing);
+  assert(powerOnOpen.pending());
+  assert(powerOnOpen.update(false, true, 200) == Event::None);
+  assert(powerOnOpen.state() == State::Closing);
+  assert(powerOnOpen.directionConfirmed());
+  powerOnOpen.update(true, true, 300);
+  assert(powerOnOpen.state() == State::Closed);
+
+  GarageDoorModel failedClose(true);
+  failedClose.begin(false, 0);
+  assert(failedClose.press(100));
+  failedClose.update(false, true, 200);
+  assert(failedClose.update(false, false, 5000) == Event::None);
+  assert(failedClose.state() == State::Stopped);
+  assert(failedClose.obstruction());
+  assert(!failedClose.directionConfirmed());
+  assert(!DoorWebCommandPolicy::shouldPress(failedClose, Command::Close));
 
   GarageDoorModel open(true);
   open.begin(false, 0);
@@ -220,7 +249,7 @@ static void testUnconfirmedWebDirections() {
   openWithoutFlash.update(false, false, 15100);
   assert(openWithoutFlash.state() == State::Open);
   assert(!openWithoutFlash.directionConfirmed());
-  assert(!DoorWebCommandPolicy::shouldPress(openWithoutFlash, Command::Close));
+  assert(DoorWebCommandPolicy::shouldPress(openWithoutFlash, Command::Close));
 }
 
 static void testWebCommandReasons() {
@@ -230,12 +259,12 @@ static void testWebCommandReasons() {
 
   GarageDoorModel startup(true);
   startup.begin(false, 0);
-  for (const Command command : {Command::Open, Command::Close}) {
-    const auto result = Policy::evaluate(startup, command);
-    assert(result.action == Action::Reject);
-    assert(std::strcmp(result.reason, "door position unknown after restart") == 0);
-  }
-  auto result = Policy::evaluate(startup, Command::Stop);
+  auto result = Policy::evaluate(startup, Command::Open);
+  assert(result.action == Action::NoOp);
+  assert(std::strcmp(result.reason, "already open") == 0);
+  result = Policy::evaluate(startup, Command::Close);
+  assert(result.action == Action::Press);
+  result = Policy::evaluate(startup, Command::Stop);
   assert(result.action == Action::NoOp);
   assert(std::strcmp(result.reason, "already stopped") == 0);
 

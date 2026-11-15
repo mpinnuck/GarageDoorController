@@ -75,15 +75,23 @@ The conditional endpoints return `{"ok":true,"pressed":true}` when they press.
 A successful no-op returns, for example,
 `{"ok":true,"pressed":false,"reason":"already closed"}`. A refused command
 returns HTTP 200 with `ok:false`, `pressed:false`, and a reason, for example
-`"door position unknown after restart"` or `"door direction unconfirmed"`.
+`"door direction unconfirmed"`.
 Missing or incorrect tokens return HTTP 401. Invalid requests, disabled
 control and failed presses return HTTP 400, 403 and 409 respectively.
 
 After a power-on with the reed open, or another restart without a usable saved
-position, the position and next opener direction are unknown. Open and Close
-are refused until the closed reed establishes a known position. Use the wall
-button or remote to close the door, checking its path and direction; the raw
-web press also bypasses this direction check.
+position, the controller reports Open with direction unconfirmed. Open is a
+no-op; Close is allowed and predicts closing. The motor indicator confirms a
+start, not its direction, and the reed confirms closure. If the predicted
+closing movement ends without the reed closing, direction is unconfirmed and
+conditional Open and Close commands are refused. To recover, use the wall
+button or remote to close the door until the reed confirms it is closed,
+checking the door's path and direction. If the motor does not start, the
+controller returns to the assumed Open state and Close can be retried.
+This assumes an open reed means the door is open; if the door was left part-way
+through travel during a power outage, the first Close press may move it farther
+open. Check the door's path and use the wall button or remote if needed. The
+raw web press bypasses the conditional direction checks.
 Status and utility endpoints are `GET /api/status`, `GET /api/log?since=N`,
 and `POST /api/reset-boot-count`.
 
@@ -101,10 +109,10 @@ it in all shortcuts.
 - The web button performs a raw opener press. Its Open/Stop/Close label is an
   estimate because the opener controls its own cycle.
 - Conditional HTTP commands use the controller's door model and are refused
-  when a requested action is not safe to infer. Open or
-  Close from Stopped, and Close from Open, require a confirmed direction.
-  Without the motor indicator, the model cannot confirm direction, so these
-  conditional commands will not press; the raw press remains available.
+  when a requested action is not safe to infer. Open or Close from Stopped
+  requires a confirmed direction; Close from Open is allowed without one.
+  Without the motor indicator, the model cannot confirm direction, so commands
+  from Stopped will not press; the raw press remains available.
 - The control lock is saved across restarts and defaults to disabled on first
   use. Disabling it releases an active pulse but does not stop a moving door or
   disable the opener's physical wall button or remote.

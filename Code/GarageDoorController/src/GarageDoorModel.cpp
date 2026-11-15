@@ -29,7 +29,7 @@ bool GarageDoorModel::moving() const { return isMoving(_state); }
 
 void GarageDoorModel::begin(bool closed, uint32_t now) {
   _closed = closed;
-  _state = closed ? State::Closed : State::Stopped;
+  _state = closed ? State::Closed : State::Open;
   _movementStart = now;
   _startupDirectionUnknown = !closed;
 }
@@ -97,8 +97,8 @@ bool GarageDoorModel::press(uint32_t now) {
     _previousDirectionConfirmed = _directionConfirmed;
     _previousStartupDirectionUnknown = _startupDirectionUnknown;
     _previousObstruction = _obstruction;
-    _candidateDirectionKnown = _closed ||
-        ((_state == State::Open || _state == State::Stopped) && _directionConfirmed);
+    _candidateDirectionKnown = _closed || _state == State::Open ||
+                               (_state == State::Stopped && _directionConfirmed);
     const State direction = nextDirection();
     _startupDirectionUnknown = false;
     _directionConfirmed = false;
@@ -147,7 +147,7 @@ GarageDoorModel::Event GarageDoorModel::update(bool closed, bool motorRunning, u
       else if (!isMoving(_state)) {
         _candidateDirectionKnown = _closed ||
             ((_state == State::Open || _state == State::Stopped) && _directionConfirmed);
-        start(nextDirection(), now);
+        start(_startupDirectionUnknown ? State::MovingUnknown : nextDirection(), now);
       }
       _startupDirectionUnknown = false;
       _directionConfirmed = _candidateDirectionKnown &&

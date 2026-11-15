@@ -78,13 +78,12 @@ int main() {
   http.request("/api/door/close", "close", "close");
   assert(http.status == 200);
   assert(http.contentType == "application/json");
-  assert(http.responseBody ==
-         "{\"ok\":false,\"pressed\":false,\"reason\":\"door position unknown after restart\"}");
-  assert(presses == 0);
+  assert(http.responseBody == "{\"ok\":true,\"pressed\":true}");
+  assert(presses == 1);
   http.request("/api/door/open", "open", "open");
   assert(http.responseBody ==
-         "{\"ok\":false,\"pressed\":false,\"reason\":\"door position unknown after restart\"}");
-  assert(presses == 0);
+         "{\"ok\":true,\"pressed\":false,\"reason\":\"already open\"}");
+  assert(presses == 1);
   http.request("/api/door/stop", "stop", "stop");
   assert(http.responseBody == "{\"ok\":true,\"pressed\":false,\"reason\":\"already stopped\"}");
 
@@ -92,15 +91,15 @@ int main() {
   http.request("/api/door/close", "close", "close");
   assert(http.status == 200);
   assert(http.responseBody == "{\"ok\":true,\"pressed\":false,\"reason\":\"already closed\"}");
-  assert(presses == 0);
+  assert(presses == 1);
   http.request("/api/door/open", "open", "open");
   assert(http.status == 200);
   assert(http.responseBody == "{\"ok\":true,\"pressed\":true}");
-  assert(presses == 1);
+  assert(presses == 2);
   pressSucceeds = false;
   http.request("/api/door/open", "open", "open");
   assert(http.status == 409);
-  assert(presses == 1);
+  assert(presses == 2);
   pressSucceeds = true;
 
   door.begin(false, 200);
@@ -112,15 +111,15 @@ int main() {
   assert(http.status == 200);
   assert(http.responseBody ==
          "{\"ok\":false,\"pressed\":false,\"reason\":\"door direction unconfirmed\"}");
-  assert(presses == 1);
+  assert(presses == 2);
 
   http.request("/api/door/close", "wrong", "close");
   assert(http.status == 400);
-  assert(presses == 1);
+  assert(presses == 2);
   status.controlEnabled = false;
   http.request("/api/door/open", "open", "open");
   assert(http.status == 403);
-  assert(presses == 1);
+  assert(presses == 2);
 
   status.controlEnabled = true;
   door.begin(true, 200);
@@ -130,29 +129,29 @@ int main() {
   assert(http.status == 200);
   assert(http.responseBody ==
          "{\"ok\":false,\"pressed\":false,\"reason\":\"opener start or stop awaiting confirmation\"}");
-  assert(presses == 1);
+  assert(presses == 2);
   door.update(false, true, 500);
   http.request("/api/door/stop", "stop", "stop");
   assert(http.status == 200);
   assert(http.responseBody == "{\"ok\":true,\"pressed\":true}");
-  assert(presses == 2);
+  assert(presses == 3);
   assert(door.press(600));
   http.request("/api/door/stop", "stop", "stop");
   assert(http.status == 200);
   assert(http.responseBody ==
          "{\"ok\":false,\"pressed\":false,\"reason\":\"opener start or stop awaiting confirmation\"}");
-  assert(presses == 2);
+  assert(presses == 3);
 
   http.request("/api/door/press", "press", "press");
   assert(http.status == 200);
-  assert(presses == 3);
+  assert(presses == 4);
 
   StatusWebServer emptyTokenServer(log, clock, boot, status, "", pressDoor, commandDoor,
                                   setControlEnabled);
   emptyTokenServer.loop();
   WebServer::instance->request("/api/door/press", "press", "press", "");
   assert(WebServer::instance->status == 401);
-  assert(presses == 3);
+  assert(presses == 4);
 
   std::puts("Status web server tests passed");
 }

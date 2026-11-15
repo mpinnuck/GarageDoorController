@@ -26,9 +26,9 @@ public:
                (state == State::Stopped && door.directionConfirmed() &&
                 door.nextDirection() == State::Opening);
       case Command::Close:
-        return door.directionConfirmed() &&
-               (state == State::Open ||
-                (state == State::Stopped && door.nextDirection() == State::Closing));
+        return state == State::Open ||
+               (door.directionConfirmed() && state == State::Stopped &&
+                door.nextDirection() == State::Closing);
       case Command::Stop:
         return !door.pending() && (state == State::Opening || state == State::Closing);
     }
