@@ -5,6 +5,11 @@
 #include <esp_netif.h>
 #include <esp_wifi.h>
 
+/**
+ * @brief Reads the Wi-Fi station interface's IP information.
+ * @param[out] info Receives the interface's IP configuration on success.
+ * @return True if the interface has a nonzero IP address; otherwise, false.
+ */
 static bool getIpInfo(esp_netif_ip_info_t &info) {
   esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
   if (netif == nullptr) return false;

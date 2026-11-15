@@ -11,6 +11,12 @@ public:
     const char *reason;
   };
 
+  /**
+   * @brief Checks whether a command should activate the opener input.
+   * @param[in] door Current garage-door model.
+   * @param[in] command Requested door command.
+   * @return True if the command should press the opener; otherwise, false.
+   */
   static bool shouldPress(const GarageDoorModel &door, Command command) {
     using State = GarageDoorModel::State;
     const State state = door.state();
@@ -29,6 +35,12 @@ public:
     return false;
   }
 
+  /**
+   * @brief Evaluates a command against the current door state.
+   * @param[in] door Current garage-door model.
+   * @param[in] command Requested door command.
+   * @return The action to take and, when applicable, its explanation.
+   */
   static Result evaluate(const GarageDoorModel &door, Command command) {
     using State = GarageDoorModel::State;
     if (shouldPress(door, command)) return {Action::Press, nullptr};

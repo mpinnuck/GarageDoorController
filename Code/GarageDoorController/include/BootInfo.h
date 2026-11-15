@@ -9,10 +9,26 @@
 
 class BootInfo {
 public:
-  void begin();   // call once in setup(); increments the stored counter
-  void resetCount();   // sets the stored counter back to 0
+  /**
+   * @brief Reads the reset reason and increments the persisted boot counter.
+   */
+  void begin();
 
+  /**
+   * @brief Sets the in-memory boot counter to zero and attempts to persist it.
+   */
+  void resetCount();
+
+  /**
+   * @brief Gets the boot count for this device.
+   * @return The current boot count.
+   */
   uint32_t bootCount() const { return _bootCount; }
+
+  /**
+   * @brief Gets a human-readable description of the last reset reason.
+   * @return A constant string describing the reset reason.
+   */
   const char *resetReason() const;
 
 private:

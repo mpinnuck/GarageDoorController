@@ -67,9 +67,32 @@ bool positionRestorePending = false;
 bool positionStartupSettled = false;
 bool flashObserved = false;
 uint32_t lastFlashAt = 0;
+
+/**
+ * @brief Attempts a raw opener-button press through the control gate.
+ * @return True if the press was accepted; otherwise, false.
+ */
 static bool pressDoor();
+
+/**
+ * @brief Evaluates and, when allowed, executes a conditional door command.
+ * @param[in] command Door command requested by the caller.
+ * @return The command outcome and any applicable explanation.
+ */
 static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command command);
+
+/**
+ * @brief Persists the requested control-enabled state.
+ * @param[in] enabled State to save.
+ * @return True if the state was saved; otherwise, false.
+ */
 static bool saveControlEnabled(bool enabled);
+
+/**
+ * @brief Applies and persists the requested door-control state.
+ * @param[in] enabled True to enable control, or false to disable it.
+ * @return True if the state was saved and applied; otherwise, false.
+ */
 static bool setControlEnabled(bool enabled);
 DoorControlGate controlGate(saveControlEnabled);
 
@@ -79,6 +102,11 @@ DeviceStatus deviceStatus;
 StatusWebServer webServer(Log, clockSync, bootInfo, deviceStatus, GARAGE_CONTROL_TOKEN, pressDoor, commandDoor,
                           setControlEnabled);
 
+/**
+ * @brief Clears the persisted position and reports storage failures.
+ * @return True if the position was cleared or no record needed clearing;
+ *         otherwise, false.
+ */
 static bool clearSavedPosition() {
   positionRestorePending = false;
   if (!positionStorageHealthy) return false;
@@ -90,6 +118,9 @@ static bool clearSavedPosition() {
   return true;
 }
 
+/**
+ * @brief Saves the current door position when startup and sensor state are settled.
+ */
 static void saveSettledPosition() {
   if (!positionStorageHealthy || !positionStartupSettled || !OPENER_FLASH_FITTED) return;
   GarageDoorModel::Position position;
@@ -104,6 +135,11 @@ static void saveSettledPosition() {
   }
 }
 
+/**
+ * @brief Maps the ESP reset cause to a position-restore reset category.
+ * @param[in] reason ESP reset cause to translate.
+ * @return Corresponding position-restore reset category.
+ */
 static DoorPositionRestore::Reset positionResetReason(esp_reset_reason_t reason) {
   using Reset = DoorPositionRestore::Reset;
   switch (reason) {
@@ -119,6 +155,9 @@ static DoorPositionRestore::Reset positionResetReason(esp_reset_reason_t reason)
   }
 }
 
+/**
+ * @brief Loads and conditionally schedules restoration of a saved door position.
+ */
 static void loadSavedPosition() {
   if (!positionStore.load()) {
     positionStorageHealthy = false;
@@ -153,6 +192,9 @@ static bool saveControlEnabled(bool enabled) {
   return saved;
 }
 
+/**
+ * @brief Restores the persisted control-enabled state, defaulting to disabled.
+ */
 static void restoreControlEnabled() {
   Preferences prefs;
   if (!prefs.begin("door-control", false)) {
@@ -184,6 +226,10 @@ static bool setControlEnabled(bool enabled) {
   return true;
 }
 
+/**
+ * @brief Validates and issues a raw opener-button pulse.
+ * @return True if the pulse was started; otherwise, false.
+ */
 static bool pressDoorInternal() {
   const uint32_t now = millis();
   if (!controlGate.enabled()) {
@@ -227,10 +273,17 @@ static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command co
                                                             "opener press failed"};
 }
 
+/**
+ * @brief Ends the opener pulse from the timer callback.
+ * @param[in] context Unused timer callback context.
+ */
 static void releaseOpener(void *) {
   digitalWrite(OPENER_TRIGGER_PIN, LOW);
 }
 
+/**
+ * @brief Configures Wi-Fi station mode and password-protected OTA updates.
+ */
 static void setupNetwork() {
   WiFi.mode(WIFI_STA);
   if (!WiFi.setHostname(DEVICE_NAME)) Log.log("Could not set Wi-Fi hostname");
@@ -241,6 +294,9 @@ static void setupNetwork() {
   ArduinoOTA.setPassword(OTA_PASSWORD);
 }
 
+/**
+ * @brief Initializes hardware, persistent state, services, and network setup.
+ */
 void setup() {
   digitalWrite(OPENER_TRIGGER_PIN, LOW);
   pinMode(OPENER_TRIGGER_PIN, OUTPUT);
@@ -274,6 +330,9 @@ void setup() {
   inputMonitoringStartedAt = millis();
 }
 
+/**
+ * @brief Runs the controller's periodic sensor, network, and web-server work.
+ */
 void loop() {
   if (triggerActive && millis() - triggerStart >= OPENER_PULSE_MS) {
     digitalWrite(OPENER_TRIGGER_PIN, LOW);

@@ -20,19 +20,41 @@ public:
     char text[kTextLen];
   };
 
+  /**
+   * @brief Attempts to initialize the mutex used to protect the log.
+   */
   void begin();
 
-  // printf-style logging. Writes to Serial and the ring buffer.
+  /**
+   * @brief Formats a message and writes it to Serial and the ring buffer.
+   * @param[in] fmt printf-style format string followed by its format arguments.
+   */
   void log(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
-  // Sequence number of the newest entry (0 if empty).
+  /**
+   * @brief Gets the sequence number of the newest log entry.
+   * @return The newest sequence number, or zero if the log is empty.
+   */
   uint32_t latestSeq() const;
 
-  // Calls fn for every stored entry with seq > since, oldest first.
+  /**
+   * @brief Calls a function for each stored entry newer than a sequence number.
+   * @param[in] since Sequence number after which to return entries.
+   * @param[in] fn Function called with each matching entry, oldest first.
+   *
+   * The callback runs while the log mutex is held and must not call this log.
+   */
   void forEachSince(uint32_t since, const std::function<void(const Entry &)> &fn) const;
 
 private:
+  /**
+   * @brief Acquires the log mutex when it has been initialized.
+   */
   void lock() const;
+
+  /**
+   * @brief Releases the log mutex when it has been initialized.
+   */
   void unlock() const;
 
   Entry _entries[kCapacity] = {};

@@ -8,14 +8,36 @@
 
 class DebouncedInput {
 public:
-  // activeLow: true if the input reads LOW when "active".
+  /**
+   * @brief Creates a debounced digital input.
+   * @param[in] pin GPIO pin to read.
+   * @param[in] activeLow True if a LOW reading represents the active state.
+   * @param[in] debounceMs Required stable time before accepting a state change.
+   */
   DebouncedInput(uint8_t pin, bool activeLow, uint32_t debounceMs);
 
-  void begin();          // configures the pin and takes the initial reading
-  bool update();         // call often; returns true when the stable state changes
+  /**
+   * @brief Configures the pin and initializes the stable input state.
+   */
+  void begin();
+
+  /**
+   * @brief Samples the input and updates its debounced state.
+   * @return True if the stable state changed; otherwise, false.
+   */
+  bool update();
+
+  /**
+   * @brief Gets the current debounced input state.
+   * @return True if the input is active; otherwise, false.
+   */
   bool active() const { return _active; }
 
 private:
+  /**
+   * @brief Reads the pin and converts its electrical level to an active state.
+   * @return True if the raw input represents the active state.
+   */
   bool readRaw() const;
 
   const uint8_t _pin;
