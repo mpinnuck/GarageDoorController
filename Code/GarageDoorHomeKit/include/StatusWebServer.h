@@ -23,7 +23,7 @@
 class StatusWebServer {
 public:
   StatusWebServer(EventLog &log, const ClockSync &clock, BootInfo &boot,
-                  const DeviceStatus &status, bool (*pressDoor)(),
+                  const DeviceStatus &status, const char *controlToken, bool (*pressDoor)(),
                   DoorWebCommandPolicy::Result (*commandDoor)(DoorWebCommandPolicy::Command),
                   bool (*setControlEnabled)(bool));
 
@@ -39,6 +39,7 @@ private:
   void handleDoorCommand(DoorWebCommandPolicy::Command command, const char *token);
   void handleControlEnabled();
   void handleNotFound();
+  bool authorizeControl();
 
   static void appendJsonString(String &out, const char *s);
 
@@ -49,6 +50,7 @@ private:
   const ClockSync &_clock;
   BootInfo &_boot;
   const DeviceStatus &_status;
+  const char *_controlToken;
   bool (*_pressDoor)();
   DoorWebCommandPolicy::Result (*_commandDoor)(DoorWebCommandPolicy::Command);
   bool (*_setControlEnabled)(bool);

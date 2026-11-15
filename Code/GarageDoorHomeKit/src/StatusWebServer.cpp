@@ -10,19 +10,19 @@
 #endif
 
 StatusWebServer::StatusWebServer(EventLog &log, const ClockSync &clock, BootInfo &boot,
-                                 const DeviceStatus &status, bool (*pressDoor)(),
+                                 const DeviceStatus &status, const char *controlToken, bool (*pressDoor)(),
                                  DoorWebCommandPolicy::Result (*commandDoor)(
                                      DoorWebCommandPolicy::Command),
                                  bool (*setControlEnabled)(bool))
-    : _log(log), _clock(clock), _boot(boot), _status(status), _pressDoor(pressDoor),
+    : _log(log), _clock(clock), _boot(boot), _status(status), _controlToken(controlToken), _pressDoor(pressDoor),
       _commandDoor(commandDoor), _setControlEnabled(setControlEnabled) {}
 
 void StatusWebServer::loop() {
   if (!_running) {
     if (!NetworkStatus::hasIp()) return;
 
-    const char *headers[] = {"X-Garage-Control"};
-    _server.collectHeaders(headers, 1);
+    const char *headers[] = {"X-Garage-Control", "X-Garage-Token"};
+    _server.collectHeaders(headers, 2);
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/status", HTTP_GET, [this]() { handleStatus(); });
     _server.on("/api/log", HTTP_GET, [this]() { handleLog(); });
@@ -138,7 +138,20 @@ void StatusWebServer::handleLog() {
   _server.send(200, "application/json", json);
 }
 
+bool StatusWebServer::authorizeControl() {
+  if (_controlToken[0] != '\0' && _server.header("X-Garage-Token") == _controlToken)
+    return true;
+  _server.sendHeader("Cache-Control", "no-store");
+  _server.send(401, "text/plain", "Invalid garage control token");
+  return false;
+}
+
 void StatusWebServer::handleResetBootCount() {
+  if (!authorizeControl()) return;
+  if (_server.header("X-Garage-Control") != "reset") {
+    _server.send(400, "text/plain", "Invalid request");
+    return;
+  }
   _boot.resetCount();
   _log.log("Boot count reset from web UI");
   _server.sendHeader("Cache-Control", "no-store");
@@ -146,6 +159,7 @@ void StatusWebServer::handleResetBootCount() {
 }
 
 void StatusWebServer::handleDoorPress() {
+  if (!authorizeControl()) return;
   _server.sendHeader("Cache-Control", "no-store");
   if (_server.header("X-Garage-Control") != "press" || _server.arg("plain") != "press") {
     _server.send(400, "text/plain", "Invalid request");
@@ -160,6 +174,7 @@ void StatusWebServer::handleDoorPress() {
 
 void StatusWebServer::handleDoorCommand(DoorWebCommandPolicy::Command command,
                                         const char *token) {
+  if (!authorizeControl()) return;
   _server.sendHeader("Cache-Control", "no-store");
   if (_server.header("X-Garage-Control") != token || _server.arg("plain") != token) {
     _server.send(400, "text/plain", "Invalid request");
@@ -167,17 +182,23 @@ void StatusWebServer::handleDoorCommand(DoorWebCommandPolicy::Command command,
     _server.send(403, "text/plain", "Door control is disabled");
   } else {
     const DoorWebCommandPolicy::Result result = _commandDoor(command);
-    if (result == DoorWebCommandPolicy::Result::Ignored) {
-      _server.send(200, "application/json", "{\"ok\":true,\"pressed\":false}");
-    } else if (result == DoorWebCommandPolicy::Result::Failed) {
+    if (result.action == DoorWebCommandPolicy::Action::Failed) {
       _server.send(409, "text/plain", "Opener is busy");
-    } else {
+    } else if (result.action == DoorWebCommandPolicy::Action::Press) {
       _server.send(200, "application/json", "{\"ok\":true,\"pressed\":true}");
+    } else {
+      String json = result.action == DoorWebCommandPolicy::Action::NoOp
+                        ? "{\"ok\":true,\"pressed\":false,\"reason\":"
+                        : "{\"ok\":false,\"pressed\":false,\"reason\":";
+      appendJsonString(json, result.reason);
+      json += '}';
+      _server.send(200, "application/json", json);
     }
   }
 }
 
 void StatusWebServer::handleControlEnabled() {
+  if (!authorizeControl()) return;
   _server.sendHeader("Cache-Control", "no-store");
   const String value = _server.arg("plain");
   if (_server.header("X-Garage-Control") != "control" ||

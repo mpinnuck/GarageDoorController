@@ -8,7 +8,7 @@ const elements = {};
 function element(id) {
   if (!elements[id]) {
     elements[id] = {
-      textContent: '', className: '', innerHTML: '', disabled: false,
+      textContent: '', className: '', innerHTML: '', value: '', disabled: false,
       scrollTop: 0, clientHeight: 0, scrollHeight: 0, childNodes: [],
       appendChild(child) { this.childNodes.push(child); },
       removeChild() { this.childNodes.shift(); },
@@ -26,9 +26,15 @@ let state = {
   freeHeap: 1024, minFreeHeap: 1024, firmware: 'test',
 };
 let controlError = false;
+const requests = [];
 const context = {
   document: { getElementById: element, createElement: () => ({}) },
   fetch: async (url, options) => {
+    if (options?.method === 'POST') {
+      requests.push({ url, options });
+      if (options.headers['X-Garage-Token'] !== 'test-control-token')
+        return { ok: false, status: 401, text: async () => 'Invalid garage control token' };
+    }
     if (url === '/api/door/control') {
       if (controlError) return { ok: false, text: async () => 'Save failed' };
       state = { ...state, controlEnabled: options.body === 'enable' };
@@ -38,7 +44,7 @@ const context = {
       json: async () => url.startsWith('/api/status') ? state : { latest: 0, entries: [] },
     };
   },
-  AbortController, setTimeout, clearTimeout, setInterval: () => {},
+  AbortController, setTimeout, clearTimeout, setInterval: () => {}, confirm: () => true,
   console,
 };
 vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOnline = setOnline;', context);
@@ -59,6 +65,20 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.strictEqual(element('press').disabled, false);
   assert.strictEqual(element('control-toggle').textContent, 'Control enabled: Disable');
   assert.strictEqual(element('control-toggle').className, 'control-enabled');
+
+  await element('press').onclick();
+  assert.match(element('control-error').textContent, /Enter the control token/);
+  assert.strictEqual(requests.length, 0);
+  element('control-token').value = 'wrong-token';
+  await element('press').onclick();
+  assert.match(element('control-error').textContent, /Invalid garage control token/);
+  assert.strictEqual(element('control-token').value, '');
+  element('control-token').value = 'test-control-token';
+  await element('press').onclick();
+  assert.strictEqual(requests.at(-1).options.headers['X-Garage-Control'], 'press');
+  await element('rst').onclick();
+  assert.strictEqual(requests.at(-1).options.headers['X-Garage-Control'], 'reset');
+  assert.strictEqual(requests.at(-1).options.headers['X-Garage-Token'], 'test-control-token');
 
   state = { ...state, deviceName: '<device>', ip: '<ip>' };
   await context.testStatus();

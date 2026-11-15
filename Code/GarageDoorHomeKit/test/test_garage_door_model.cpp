@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
+#include <initializer_list>
 
 using State = GarageDoorModel::State;
 using Event = GarageDoorModel::Event;
@@ -143,7 +145,7 @@ static void testDoorWebCommands() {
   GarageDoorModel stoppedAfterClosing(true);
   stoppedAfterClosing.begin(false, 0);
   const GarageDoorModel::Position closingPosition = {
-      1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Closing), 0, 1};
+      1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Closing), 1, 0};
   assert(stoppedAfterClosing.restorePosition(closingPosition));
   assert(DoorWebCommandPolicy::shouldPress(stoppedAfterClosing, Command::Open));
   assert(!DoorWebCommandPolicy::shouldPress(stoppedAfterClosing, Command::Close));
@@ -166,6 +168,135 @@ static void testDoorWebCommands() {
   movingUnknown.begin(false, 0);
   movingUnknown.update(false, true, 100);
   assert(!DoorWebCommandPolicy::shouldPress(movingUnknown, Command::Stop));
+}
+
+static void testUnconfirmedWebDirections() {
+  using Command = DoorWebCommandPolicy::Command;
+
+  GarageDoorModel obstructed(true);
+  obstructed.begin(true, 0);
+  obstructed.update(true, true, 100);
+  obstructed.update(false, true, 200);
+  obstructed.update(false, false, 16600);
+  obstructed.update(false, true, 17000);
+  obstructed.update(false, false, 20000);
+  assert(obstructed.state() == State::Stopped);
+  assert(obstructed.obstruction());
+  assert(!obstructed.directionConfirmed());
+  assert(!DoorWebCommandPolicy::shouldPress(obstructed, Command::Open));
+  assert(!DoorWebCommandPolicy::shouldPress(obstructed, Command::Close));
+  obstructed.update(false, true, 20100);
+  obstructed.update(false, false, 36600);
+  assert(obstructed.state() == State::Stopped);
+  assert(!obstructed.directionConfirmed());
+  assert(!DoorWebCommandPolicy::shouldPress(obstructed, Command::Open));
+  assert(!DoorWebCommandPolicy::shouldPress(obstructed, Command::Close));
+
+  GarageDoorModel earlyStop(true);
+  earlyStop.begin(true, 0);
+  earlyStop.update(true, true, 100);
+  earlyStop.update(false, true, 200);
+  earlyStop.update(false, false, 5000);
+  assert(earlyStop.state() == State::Stopped);
+  assert(!earlyStop.directionConfirmed());
+  assert(!DoorWebCommandPolicy::shouldPress(earlyStop, Command::Open));
+  assert(!DoorWebCommandPolicy::shouldPress(earlyStop, Command::Close));
+
+  GarageDoorModel reversed(true);
+  reversed.begin(true, 0);
+  reversed.update(true, true, 100);
+  reversed.update(false, true, 200);
+  assert(reversed.press(1000));
+  assert(reversed.update(false, true, 4000) == Event::Reversed);
+  reversed.update(false, false, 6000);
+  assert(reversed.state() == State::Stopped);
+  assert(!reversed.directionConfirmed());
+  assert(!DoorWebCommandPolicy::shouldPress(reversed, Command::Open));
+  assert(!DoorWebCommandPolicy::shouldPress(reversed, Command::Close));
+
+  GarageDoorModel openWithoutFlash(false);
+  openWithoutFlash.begin(true, 0);
+  assert(openWithoutFlash.press(100));
+  openWithoutFlash.update(false, false, 15100);
+  assert(openWithoutFlash.state() == State::Open);
+  assert(!openWithoutFlash.directionConfirmed());
+  assert(!DoorWebCommandPolicy::shouldPress(openWithoutFlash, Command::Close));
+}
+
+static void testWebCommandReasons() {
+  using Policy = DoorWebCommandPolicy;
+  using Command = Policy::Command;
+  using Action = Policy::Action;
+
+  GarageDoorModel startup(true);
+  startup.begin(false, 0);
+  for (const Command command : {Command::Open, Command::Close}) {
+    const auto result = Policy::evaluate(startup, command);
+    assert(result.action == Action::Reject);
+    assert(std::strcmp(result.reason, "door position unknown after restart") == 0);
+  }
+  auto result = Policy::evaluate(startup, Command::Stop);
+  assert(result.action == Action::NoOp);
+  assert(std::strcmp(result.reason, "already stopped") == 0);
+
+  startup.update(true, false, 100);
+  result = Policy::evaluate(startup, Command::Close);
+  assert(result.action == Action::NoOp);
+  assert(std::strcmp(result.reason, "already closed") == 0);
+  assert(Policy::evaluate(startup, Command::Open).action == Action::Press);
+
+  GarageDoorModel stopped(true);
+  stopped.begin(false, 0);
+  const GarageDoorModel::Position unconfirmed = {
+      1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Closing), 0, 1};
+  assert(stopped.restorePosition(unconfirmed));
+  result = Policy::evaluate(stopped, Command::Open);
+  assert(result.action == Action::Reject);
+  assert(std::strcmp(result.reason, "door direction unconfirmed") == 0);
+
+  const GarageDoorModel::Position confirmed = {
+      1, static_cast<uint8_t>(State::Stopped), static_cast<uint8_t>(State::Closing), 1, 0};
+  assert(stopped.restorePosition(confirmed));
+  assert(Policy::evaluate(stopped, Command::Open).action == Action::Press);
+  result = Policy::evaluate(stopped, Command::Close);
+  assert(result.action == Action::Reject);
+  assert(std::strcmp(result.reason, "next press would move in opposite direction") == 0);
+}
+
+static void testStopWhilePending() {
+  using Policy = DoorWebCommandPolicy;
+  using Command = Policy::Command;
+  using Action = Policy::Action;
+
+  GarageDoorModel door(true);
+  door.begin(true, 0);
+  assert(door.press(100));
+  door.update(false, false, 200);
+  assert(door.state() == State::Opening);
+  auto result = Policy::evaluate(door, Command::Stop);
+  assert(result.action == Action::Reject);
+  assert(std::strcmp(result.reason, "opener start or stop awaiting confirmation") == 0);
+  door.update(false, false, 3099);
+  assert(Policy::evaluate(door, Command::Stop).action == Action::Reject);
+
+  door.update(false, true, 3100);
+  assert(!door.pending());
+  assert(Policy::evaluate(door, Command::Stop).action == Action::Press);
+  assert(door.press(3200));
+  result = Policy::evaluate(door, Command::Stop);
+  assert(result.action == Action::Reject);
+  assert(std::strcmp(result.reason, "opener start or stop awaiting confirmation") == 0);
+  door.update(false, false, 5000);
+  result = Policy::evaluate(door, Command::Stop);
+  assert(result.action == Action::NoOp);
+  assert(std::strcmp(result.reason, "already stopped") == 0);
+
+  GarageDoorModel failedStart(true);
+  failedStart.begin(true, 0);
+  assert(failedStart.press(100));
+  failedStart.update(false, false, 200);
+  assert(failedStart.update(false, false, 3100) == Event::StartFailed);
+  assert(Policy::evaluate(failedStart, Command::Stop).action == Action::NoOp);
 }
 
 static void testPositionRestore() {
@@ -269,6 +400,9 @@ int main() {
   testStopReverseAndObstruction();
   testOpenCompletionMargin();
   testDoorWebCommands();
+  testUnconfirmedWebDirections();
+  testWebCommandReasons();
+  testStopWhilePending();
   testTimeoutAndFallback();
   testReedPriorityAndFailedStart();
   testPositionRestore();

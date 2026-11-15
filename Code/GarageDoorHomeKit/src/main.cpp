@@ -1,12 +1,12 @@
 // Garage door open/closed controller with a web UI and HTTP API.
 // Board: Seeed XIAO ESP32C3, Arduino ESP32 core 3.x.
 //
-// Hardware (schematic rev 10):
+// Hardware:
 //   D1 (GPIO3): door input, 10k pull-up to 3V3, 100nF to GND,
 //               1k series + 1N4148 clamps, from J3 (JST PH) -> panel jack -> MC-38 reed.
 //   Reed closed (magnet present, door shut) = LOW.
 //   D2 (GPIO4): active-HIGH opener button output.
-//   D3 (GPIO5): active-LOW FLASH input from PC817.
+//   D3 (GPIO5): active-LOW LAMP/motor indicator input from PC817.
 //
 // Setup: copy include/secrets.example.h to include/secrets.h and fill it in.
 //
@@ -36,6 +36,8 @@
 #ifndef FIRMWARE_VERSION
 #define FIRMWARE_VERSION "dev"
 #endif
+static_assert(sizeof(GARAGE_CONTROL_TOKEN) >= 33,
+              "Set GARAGE_CONTROL_TOKEN in secrets.h to a random token of at least 32 characters");
 
 const uint8_t DOOR_PIN = 3;     // XIAO D1
 const uint8_t OPENER_TRIGGER_PIN = 4;
@@ -74,7 +76,7 @@ DoorControlGate controlGate(saveControlEnabled);
 BootInfo bootInfo;
 ClockSync clockSync;
 DeviceStatus deviceStatus;
-StatusWebServer webServer(Log, clockSync, bootInfo, deviceStatus, pressDoor, commandDoor,
+StatusWebServer webServer(Log, clockSync, bootInfo, deviceStatus, GARAGE_CONTROL_TOKEN, pressDoor, commandDoor,
                           setControlEnabled);
 
 static bool clearSavedPosition() {
@@ -218,10 +220,11 @@ static bool pressDoorInternal() {
 static bool pressDoor() { return pressDoorInternal(); }
 
 static DoorWebCommandPolicy::Result commandDoor(DoorWebCommandPolicy::Command command) {
-  if (!DoorWebCommandPolicy::shouldPress(doorModel, command))
-    return DoorWebCommandPolicy::Result::Ignored;
-  return pressDoorInternal() ? DoorWebCommandPolicy::Result::Pressed
-                             : DoorWebCommandPolicy::Result::Failed;
+  const auto result = DoorWebCommandPolicy::evaluate(doorModel, command);
+  if (result.action != DoorWebCommandPolicy::Action::Press) return result;
+  return pressDoorInternal() ? result
+                             : DoorWebCommandPolicy::Result{DoorWebCommandPolicy::Action::Failed,
+                                                            "opener press failed"};
 }
 
 static void releaseOpener(void *) {
@@ -231,6 +234,8 @@ static void releaseOpener(void *) {
 static void setupNetwork() {
   WiFi.mode(WIFI_STA);
   if (!WiFi.setHostname(DEVICE_NAME)) Log.log("Could not set Wi-Fi hostname");
+  if (!WiFi.setAutoReconnect(true)) Log.log("Could not enable Wi-Fi auto-reconnect");
+  if (!WiFi.setSleep(false)) Log.log("Could not disable Wi-Fi sleep");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   ArduinoOTA.setHostname(DEVICE_NAME);
   ArduinoOTA.setPassword(OTA_PASSWORD);

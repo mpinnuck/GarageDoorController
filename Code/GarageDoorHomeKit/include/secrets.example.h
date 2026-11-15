@@ -8,6 +8,9 @@
 #define WIFI_SSID      "MicroConcepts-2G"
 #define WIFI_PASSWORD  "your-wifi-password"
 
+// Random token for web controls and shortcuts (at least 32 characters).
+#define GARAGE_CONTROL_TOKEN ""
+
 // Password for firmware updates over Wi-Fi. Set the OTA_PASSWORD environment
 // variable to the same value when uploading.
 #define OTA_PASSWORD   "change-me"

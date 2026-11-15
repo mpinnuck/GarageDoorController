@@ -12,6 +12,7 @@ zip -r "$OUT" . \
   -x ".git/*" \
   -x "*/.pio/*" ".pio/*" \
   -x "*/.DS_Store" ".DS_Store" \
+  -x "include/secrets.h" \
   -x "*.zip"
 
 echo "Created $(pwd)/$OUT"

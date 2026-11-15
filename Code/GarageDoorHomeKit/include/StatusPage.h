@@ -42,6 +42,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .bar h2{font-size:16px;font-weight:600;margin:0;flex:1}
 button{font:inherit;font-size:13px;color:var(--text);background:var(--card);border:1px solid var(--line);
 border-radius:8px;padding:5px 10px;cursor:pointer}
+input{font:inherit;font-size:13px;color:var(--text);background:var(--card);border:1px solid var(--line);
+border-radius:8px;padding:5px 10px;width:180px}
 #press{font-size:22px;font-weight:600;color:#fff;background:#2878b5;border:0;padding:6px 16px}
 #press:disabled{background:#777;color:#fff;opacity:1}
 #control-toggle{color:#fff;border:0}
@@ -61,6 +63,7 @@ padding:8px 10px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre-w
 </div>
 <div class="door-controls"><button id="press" disabled title="Presses the opener's wall-button input; the action is an estimate">Open / Stop / Close</button>
 <button id="control-toggle" disabled>Control: unknown</button>
+<input id="control-token" type="password" placeholder="Control token" aria-label="Control token" autocomplete="off">
 <div id="control-error" class="sub" role="alert"></div></div>
 <div class="door-details"><div class="door-details-row"><div id="since"></div><div id="version" class="sub"></div></div><div class="sub" id="changes"></div>
 <div id="obstruction" class="sub"></div></div></div>
@@ -80,6 +83,14 @@ function updateControls(){
 }
 function tmo(url,opt){const c=new AbortController(),t=setTimeout(()=>c.abort(),4000);
  return fetch(url,{...opt,cache:'no-store',signal:c.signal}).finally(()=>clearTimeout(t))}
+async function postControl(url,action,body=action){
+ const token=$('control-token').value;
+ if(!token)throw Error('Enter the control token');
+ const r=await tmo(url,{method:'POST',
+  headers:{'Content-Type':'text/plain','X-Garage-Control':action,'X-Garage-Token':token},body});
+ if(r.status===401)$('control-token').value='';
+ if(!r.ok)throw Error(await r.text());
+ return r}
 function addLine(text){const ts=new Date().toLocaleString([], {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
  lines.push(`${ts}  ${text}`);const el=$('log'),atEnd=el.scrollTop+el.clientHeight>=el.scrollHeight-20;
  const d=document.createElement('div');d.innerHTML=`<span class="t">${ts}</span>  ${esc(text)}`;el.appendChild(d);
@@ -130,20 +141,19 @@ async function tick(){if(busy)return;busy=true;
  catch(e){setOnline(false)}
  finally{busy=false}}
 $('rst').onclick=async()=>{if(!confirm('Reset the boot count to 0?'))return;
- try{await fetch('/api/reset-boot-count',{method:'POST'});await status()}catch(e){}};
+ $('control-error').textContent='';
+ try{await postControl('/api/reset-boot-count','reset');await status()}
+ catch(e){$('control-error').textContent=`Boot count reset error: ${e.message}`;addLine(`Boot count reset error: ${e.message}`)}};
 $('press').onclick=async()=>{
  if(pressing)return;pressing=true;$('press').disabled=true;$('control-error').textContent='';
- try{const r=await tmo('/api/door/press',{method:'POST',headers:{'Content-Type':'application/json','X-Garage-Control':'press'},body:'press'});
-  if(!r.ok)throw Error(await r.text());await status()}
+ try{await postControl('/api/door/press','press');await status()}
  catch(e){$('control-error').textContent=`Command may not have completed: ${e.message}. Check the door before retrying.`;
   addLine(`Opener command error: ${e.message}`)}
  finally{pressing=false;updateControls()}};
 $('control-toggle').onclick=async()=>{
  if(controlChanging)return;controlChanging=true;updateControls();$('control-error').textContent='';
  const value=controlEnabled?'disable':'enable';
- try{const r=await tmo('/api/door/control',{method:'POST',
-  headers:{'Content-Type':'application/json','X-Garage-Control':'control'},body:value});
-  if(!r.ok)throw Error(await r.text());await status()}
+ try{await postControl('/api/door/control','control',value);await status()}
  catch(e){controlEnabled=false;$('control-error').textContent=`Control setting error: ${e.message}. Check status before retrying.`;
   addLine(`Control setting error: ${e.message}`)}
  finally{controlChanging=false;updateControls()}};
