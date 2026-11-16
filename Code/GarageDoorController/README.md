@@ -38,10 +38,14 @@ Open `http://garagecontroller.local/` or the controller's IP address. The page
 shows door and motion status, Wi-Fi information, boot details, an event log,
 and controls. The device advertises the Wi-Fi hostname `garagecontroller`.
 
-Enter the control token in the page's password field to use its buttons. It is
-not included in the served page or explicitly saved by the page. A browser
-may retain form values, so avoid entering it on shared devices.
-The page sends the token over unencrypted HTTP and is not for untrusted networks.
+Enter the control token in the page's password field to use its buttons. The
+page saves it in browser local storage so it persists between sessions; clear
+the field to remove it. A rejected token is also removed. Storage is separate
+for each browser and address, and browser settings or private browsing may
+prevent persistence. The token is stored unencrypted and accessible to scripts
+on the same origin and anyone with access to the browser profile; do not use
+this feature on shared devices. The page also sends the token over unencrypted
+HTTP and is not for untrusted networks.
 
 Door commands are `POST` requests with a plain-text body, matching
 `X-Garage-Control` header and `X-Garage-Token` set to the control token:

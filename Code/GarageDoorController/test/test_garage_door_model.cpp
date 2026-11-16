@@ -125,6 +125,47 @@ static void testOpenCompletionMargin() {
   assert(commandedStop.directionConfirmed());
 }
 
+static void testMotorStopBeforeMovementStart() {
+  for (const uint32_t modelStart : {2001u, 3600u}) {
+    MotionInput input;
+    GarageDoorModel model(true);
+    model.begin(true, 0);
+    assert(!input.update(true, 100));
+    const bool running = input.update(false, 2000);
+    assert(running);
+    model.update(true, running, modelStart);
+    model.update(false, running, modelStart);
+    assert(model.state() == State::Opening);
+    assert(model.directionConfirmed());
+
+    const uint32_t stopTime = modelStart == 2001 ? 3500 : 3601;
+    assert(!input.update(false, stopTime));
+    model.update(false, false, stopTime);
+    assert(model.state() == State::Stopped);
+    assert(!model.directionConfirmed());
+  }
+
+  for (const uint32_t elapsed : {1499u, 1500u, 1501u}) {
+    GarageDoorModel model(true);
+    const uint32_t start = UINT32_MAX - 1000;
+    model.begin(true, start);
+    model.update(true, true, start);
+    model.update(false, true, start);
+    model.update(false, false, start + elapsed);
+    assert(model.state() == State::Stopped);
+    assert(!model.directionConfirmed());
+  }
+
+  GarageDoorModel fullMovement(true);
+  const uint32_t start = UINT32_MAX - 1000;
+  fullMovement.begin(true, start);
+  fullMovement.update(true, true, start);
+  fullMovement.update(false, true, start);
+  fullMovement.update(false, false, start + GarageDoorModel::kOpenCompletionMs + 1500);
+  assert(fullMovement.state() == State::Open);
+  assert(fullMovement.directionConfirmed());
+}
+
 static void testDoorWebCommands() {
   using Command = DoorWebCommandPolicy::Command;
   using Action = DoorWebCommandPolicy::Action;
@@ -428,6 +469,7 @@ int main() {
   testStartFailureAndExternalMovement();
   testStopReverseAndObstruction();
   testOpenCompletionMargin();
+  testMotorStopBeforeMovementStart();
   testDoorWebCommands();
   testUnconfirmedWebDirections();
   testWebCommandReasons();

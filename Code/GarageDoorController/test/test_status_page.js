@@ -26,9 +26,17 @@ let state = {
   freeHeap: 1024, minFreeHeap: 1024, firmware: 'test',
 };
 let controlError = false;
+let storageUnavailable = false;
+const stored = new Map();
+const localStorage = {
+  getItem(key) { if (storageUnavailable) throw new Error('Storage unavailable'); return stored.get(key) ?? null; },
+  setItem(key, value) { if (storageUnavailable) throw new Error('Storage unavailable'); stored.set(key, value); },
+  removeItem(key) { if (storageUnavailable) throw new Error('Storage unavailable'); stored.delete(key); },
+};
 const requests = [];
 const context = {
   document: { getElementById: element, createElement: () => ({}) },
+  localStorage,
   fetch: async (url, options) => {
     if (options?.method === 'POST') {
       requests.push({ url, options });
@@ -70,10 +78,13 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
   assert.match(element('control-error').textContent, /Enter the control token/);
   assert.strictEqual(requests.length, 0);
   element('control-token').value = 'wrong-token';
+  element('control-token').oninput();
   await element('press').onclick();
   assert.match(element('control-error').textContent, /Invalid garage control token/);
   assert.strictEqual(element('control-token').value, '');
+  assert.strictEqual(stored.size, 0);
   element('control-token').value = 'test-control-token';
+  element('control-token').oninput();
   await element('press').onclick();
   assert.strictEqual(requests.at(-1).options.headers['X-Garage-Control'], 'press');
   await element('rst').onclick();
@@ -155,6 +166,22 @@ vm.runInNewContext(script + '\nglobalThis.testStatus = status; globalThis.testOn
     assert.strictEqual(element('motion').textContent, 'Moving');
     assert.strictEqual(element('motion').className, 'badge status-red');
   }
+
+  element('control-token').value = '';
+  vm.runInNewContext(script, { ...context });
+  assert.strictEqual(element('control-token').value, 'test-control-token');
+  element('control-token').value = '';
+  element('control-token').oninput();
+  assert.strictEqual(stored.size, 0);
+  storageUnavailable = true;
+  element('control-token').value = 'test-control-token';
+  element('control-token').oninput();
+  assert.match(element('token-storage-error').textContent, /storage unavailable/i);
+  await element('press').onclick();
+  assert.strictEqual(requests.at(-1).options.headers['X-Garage-Token'], 'test-control-token');
+  storageUnavailable = false;
+  element('control-token').oninput();
+  assert.strictEqual(element('token-storage-error').textContent, '');
   console.log('Status page tests passed');
 })().catch(error => {
   console.error(error);

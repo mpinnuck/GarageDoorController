@@ -154,7 +154,11 @@ GarageDoorModel::Event GarageDoorModel::update(bool closed, bool motorRunning, u
           (_state == State::Opening || _state == State::Closing);
     }
     if (!motorRunning && _motor && !_ignoreMotorUntilOff) {
-      if (isMoving(_state)) finish(now - 1500, _pending == Pending::Stop);
+      if (isMoving(_state)) {
+        const uint32_t elapsed = now - _movementStart;
+        const uint32_t stoppedAt = elapsed > 1500 ? now - 1500 : _movementStart;
+        finish(stoppedAt, _pending == Pending::Stop);
+      }
       _pending = Pending::None;
     }
     if (_pending == Pending::Start && now - _pressTime >= kStartTimeoutMs) {

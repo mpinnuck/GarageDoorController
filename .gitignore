@@ -10,3 +10,18 @@ fp-info-cache
 
 # macOS metadata
 .DS_Store
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Simulator local state
+/Simulator/garage_sim_state.json
+
+# Local iOS shortcuts
+/IOS Shortcuts/
