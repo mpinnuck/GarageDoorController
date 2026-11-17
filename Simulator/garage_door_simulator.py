@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Garage Door Controller simulator (mirrors firmware 4.2.0).
+Garage Door Controller simulator (mirrors firmware 4.3.0).
 
 Serves the controller's own web page and HTTP API, so browsers, curl and iOS
 Shortcuts can be developed without the real controller or door.
@@ -37,7 +37,7 @@ from enum import IntEnum
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
-FIRMWARE_VERSION = "4.4.0"
+FIRMWARE_VERSION = "4.3.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------------------------------------------------
@@ -304,7 +304,9 @@ class GarageDoorModel:
                     and self._state in (State.Opening, State.Closing))
             if not motor_running and self._motor and not self._ignore_motor_until_off:
                 if self.is_moving(self._state):
-                    self._finish(sub(now, 1500), self._pending == STOP)
+                    since_start = sub(now, self._movement_start)
+                    stopped_at = sub(now, 1500) if since_start > 1500 else self._movement_start
+                    self._finish(stopped_at, self._pending == STOP)
                 self._pending = NONE
             if self._pending == START and sub(now, self._press_time) >= self.START_TIMEOUT_MS:
                 self._state = (State.Stopped if (not self._closed and self._previous == State.Closed)
@@ -1307,7 +1309,7 @@ class Handler(BaseHTTPRequestHandler):
 
 # ---------------------------------------------------------------------------
 def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="Garage Door Controller simulator (firmware 4.2.0)")
+    p = argparse.ArgumentParser(description="Garage Door Controller simulator (firmware 4.3.0)")
     p.add_argument("--host", default="0.0.0.0", help="address to listen on (default 0.0.0.0)")
     p.add_argument("--port", type=int, default=8080, help="port (default 8080; the controller uses 80)")
     p.add_argument("--token", help="control token (default: saved random token)")

@@ -1,4 +1,4 @@
-# Garage Door Simulator (firmware 4.2.0)
+# Garage Door Simulator (firmware 4.3.0)
 
 Runs the controller's own web page and HTTP API on your computer, driven by a
 simulated opener, door and reed switch, so you can develop iOS Shortcuts, curl
@@ -16,8 +16,8 @@ python3 garage_door_simulator.py --enable-control
 
 ## What is real and what is simulated
 
-The firmware logic is a line-for-line Python port of 4.2.0: `DebouncedInput` (500 ms),
-`MotionInput`, `GarageDoorModel` (including unsigned 32-bit time arithmetic),
+The firmware logic is a line-for-line Python port of 4.3.0: `DebouncedInput` (500 ms),
+`MotionInput`, `GarageDoorModel` (including unsigned 32-bit time arithmetic and the short-run fix in `update()`),
 `DoorWebCommandPolicy`, `DoorControlGate`, `DoorPositionRestore` and the main loop.
 `StatusWebServer` is reproduced for status codes, headers, JSON and the 401/400/403/409 rules,
 including the ESP32 quirk that a form-encoded body has no `plain` argument (so it returns 400).

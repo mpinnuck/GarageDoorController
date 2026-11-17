@@ -56,6 +56,8 @@ padding:8px 10px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre-w
 <div class="door-controls"><button id="press" disabled title="Presses the opener's wall-button input; the action is an estimate">Open / Stop / Close</button>
 <button id="control-toggle" disabled>Control: unknown</button>
 <input id="control-token" type="password" placeholder="Control token" aria-label="Control token" autocomplete="off">
+<div class="sub">Token stored in this browser when available; clear the field to remove it.</div>
+<div id="token-storage-error" class="sub" role="alert"></div>
 <div id="control-error" class="sub" role="alert"></div></div>
 <div class="door-details"><div class="door-details-row"><div id="since"></div><div id="version" class="sub"></div></div><div class="sub" id="changes"></div>
 <div id="obstruction" class="sub"></div></div></div>
@@ -65,6 +67,17 @@ padding:8px 10px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre-w
 <div id="log"></div>
 </main><script>
 const $=id=>document.getElementById(id);
+const tokenStorageKey='garage-control-token';
+function saveControlToken(){
+ try{
+  const token=$('control-token').value;
+  if(token)localStorage.setItem(tokenStorageKey,token);else localStorage.removeItem(tokenStorageKey);
+  $('token-storage-error').textContent='';
+ }catch(e){$('token-storage-error').textContent='Browser storage unavailable; token changes may not persist.'}
+}
+try{const token=localStorage.getItem(tokenStorageKey);if(token!==null)$('control-token').value=token}
+catch(e){$('token-storage-error').textContent='Browser storage unavailable; token changes may not persist.'}
+$('control-token').oninput=saveControlToken;
 let lastSeq=0,paused=false,lines=[],online=null,busy=false,pressing=false,controlPending=true,
 controlEnabled=false,controlChanging=false;
 function updateControls(){
@@ -80,7 +93,7 @@ async function postControl(url,action,body=action){
  if(!token)throw Error('Enter the control token');
  const r=await tmo(url,{method:'POST',
   headers:{'Content-Type':'text/plain','X-Garage-Control':action,'X-Garage-Token':token},body});
- if(r.status===401)$('control-token').value='';
+ if(r.status===401&&$('control-token').value===token){$('control-token').value='';saveControlToken()}
  if(!r.ok)throw Error(await r.text());
  return r}
 function addLine(text){const ts=new Date().toLocaleString([], {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});

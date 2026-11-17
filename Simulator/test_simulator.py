@@ -143,7 +143,7 @@ try:
     msgs = [e["m"] for e in json.loads(req("GET", "/api/log?since=0")[1])["entries"]]
     check("power-on reboot does not restore position", any("not restored: reset reason" in m for m in msgs), msgs)
     c, b = cmd("open"); check("power-on with open door: open is a no-op", json.loads(b)["reason"] == "already open", b)
-    c, b = cmd("close"); check("power-on with open door: close allowed (4.2.0 rule)", json.loads(b)["pressed"] is True, b)
+    c, b = cmd("close"); check("power-on with open door: close allowed (4.2.0+ rule)", json.loads(b)["pressed"] is True, b)
     wait(lambda s: s["doorState"] == "Closed", 10); settle()
     check("raw press allowed", req("POST", "/api/door/press", "press", "press")[0] == 200)
     wait(lambda s: s["doorState"] == "Opening", 4); wait(lambda s: s["doorState"] == "Open", 10); settle()
