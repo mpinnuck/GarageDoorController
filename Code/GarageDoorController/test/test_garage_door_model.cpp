@@ -464,6 +464,49 @@ static void testReedPriorityAndFailedStart() {
   assert(model.state() == State::Stopped);
 }
 
+static void testClosedStateContradictionRecovery() {
+  using Command = DoorWebCommandPolicy::Command;
+
+  // Path 1: Spurious re-close while opening, then reed opens again
+  GarageDoorModel spurious(true);
+  spurious.begin(true, 0);
+  assert(spurious.press(100));
+  spurious.update(true, true, 200);
+  spurious.update(false, true, 300);
+  assert(spurious.state() == State::Opening);
+  spurious.update(true, false, 400);
+  spurious.update(false, false, 500);
+  assert(spurious.state() == State::Stopped);
+  assert(!spurious.directionConfirmed());
+  auto result = DoorWebCommandPolicy::evaluate(spurious, Command::Close);
+  assert(result.action == DoorWebCommandPolicy::Action::Reject);
+  assert(std::strcmp(result.reason, "door direction unconfirmed") == 0);
+
+  // Path 2: Missed start (motor never appears), then door opens externally
+  GarageDoorModel missed(true);
+  missed.begin(true, 0);
+  assert(missed.press(100));
+  missed.update(true, false, 200);
+  assert(missed.update(true, false, 3100) == Event::StartFailed);
+  assert(missed.state() == State::Closed);
+  missed.update(false, false, 3200);
+  assert(missed.state() == State::Stopped);
+  assert(!missed.directionConfirmed());
+  result = DoorWebCommandPolicy::evaluate(missed, Command::Close);
+  assert(result.action == DoorWebCommandPolicy::Action::Reject);
+  assert(std::strcmp(result.reason, "door direction unconfirmed") == 0);
+
+  // Invariant: after every update with closed=false, state() != Closed
+  for (int i = 0; i < 10; ++i) {
+    GarageDoorModel inv(true);
+    inv.begin(true, 0);
+    inv.update(false, false, 100 + i * 500);
+    assert(inv.state() != State::Closed);
+    inv.update(false, true, 200 + i * 500);
+    assert(inv.state() != State::Closed);
+  }
+}
+
 int main() {
   testMotionInput();
   testStartFailureAndExternalMovement();
@@ -474,6 +517,7 @@ int main() {
   testUnconfirmedWebDirections();
   testWebCommandReasons();
   testStopWhilePending();
+  testClosedStateContradictionRecovery();
   testTimeoutAndFallback();
   testReedPriorityAndFailedStart();
   testPositionRestore();

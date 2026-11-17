@@ -136,8 +136,13 @@ GarageDoorModel::Event GarageDoorModel::update(bool closed, bool motorRunning, u
     _pending = Pending::None;
     _obstruction = false;
     _ignoreMotorUntilOff = motorRunning;
-  } else if (!closed && wasClosed && !_flashFitted && !isMoving(_state)) {
-    start(State::Opening, now);
+  } else if (!closed && wasClosed) {
+    if (_state == State::Closed && _flashFitted) {
+      _state = State::Stopped;
+      _directionConfirmed = false;
+    } else if (!_flashFitted && !isMoving(_state)) {
+      start(State::Opening, now);
+    }
   }
 
   if (_flashFitted) {
