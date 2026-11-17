@@ -496,6 +496,19 @@ static void testClosedStateContradictionRecovery() {
   assert(result.action == DoorWebCommandPolicy::Action::Reject);
   assert(std::strcmp(result.reason, "door direction unconfirmed") == 0);
 
+  // Path 3: Motor still running when reed opens (don't interfere)
+  GarageDoorModel motor_running(true);
+  motor_running.begin(true, 0);
+  motor_running.update(true, true, 100);
+  motor_running.update(false, true, 200);
+  // Reed opens but motor is still running
+  assert(motor_running.state() == State::Opening);
+  assert(motor_running.motorRunning());
+  // Later, motor stops and state transitions normally
+  motor_running.update(false, false, 15100);
+  assert(motor_running.state() == State::Open);
+  assert(motor_running.directionConfirmed());
+
   // Invariant: after every update with closed=false, state() != Closed
   for (int i = 0; i < 10; ++i) {
     GarageDoorModel inv(true);
